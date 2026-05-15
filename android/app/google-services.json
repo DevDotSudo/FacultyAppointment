@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "16745918905",
+    "project_id": "faculty-appointment-sys",
+    "storage_bucket": "faculty-appointment-sys.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:16745918905:android:3d8de5d0e8b6edcef10668",
+"android_client_info": {
+            "package_name": "com.isufst.faculty_appointment"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdLYyE7_qdQTS3Y5YIrNDB_nvopfV95lw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
