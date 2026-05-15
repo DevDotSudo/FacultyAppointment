@@ -1,1 +1,3 @@
-
+class StudentState {
+  // State definitions
+}

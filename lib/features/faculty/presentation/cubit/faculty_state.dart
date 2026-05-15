@@ -1,1 +1,3 @@
-
+class FacultyState {
+  // State definitions
+}
