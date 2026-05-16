@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class RoleSelectorWidget extends StatelessWidget {
@@ -13,57 +14,53 @@ class RoleSelectorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Text(
-          'I am a',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textBody,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildRoleChip('student', 'Student'),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildRoleChip('faculty', 'Faculty'),
-            ),
-          ],
-        ),
+        Expanded(child: _RoleOption(label: 'Student', icon: Icons.school_outlined, selected: selectedRole == 'student', onTap: () => onRoleChanged('student'))),
+        const SizedBox(width: 10),
+        Expanded(child: _RoleOption(label: 'Faculty', icon: Icons.person_outline, selected: selectedRole == 'faculty', onTap: () => onRoleChanged('faculty'))),
       ],
     );
   }
+}
 
-  Widget _buildRoleChip(String role, String label) {
-    final isSelected = selectedRole == role;
-    return InkWell(
-      onTap: () => onRoleChanged(role),
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
+class _RoleOption extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _RoleOption({required this.label, required this.icon, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.fieldFill,
-          borderRadius: BorderRadius.circular(8),
+          color: selected ? AppColors.primary : const Color(0xFFF8F9FB),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.fieldBorder,
-            width: 1,
+            color: selected ? AppColors.primary : const Color(0xFFE2E5EA),
+            width: selected ? 1.5 : 1,
           ),
         ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: isSelected ? Colors.white : AppColors.textBody,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: selected ? Colors.white : AppColors.textMuted),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: selected ? Colors.white : AppColors.textBody,
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

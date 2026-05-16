@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:faculty_appointment/features/auth/data/repositories/auth_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../datasources/auth_remote_datasource.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -21,15 +20,8 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       final uid = response.user!.uid;
-      String? roleValue;
+      final roleValue = await _remoteDatasource.getUserRole(uid);
 
-      final studentDoc = await FirebaseFirestore.instance.collection('students').doc(uid).get();
-      if (studentDoc.exists) {
-        roleValue = 'student';
-      } else {
-        final facultyDoc = await FirebaseFirestore.instance.collection('faculty').doc(uid).get();
-        if (facultyDoc.exists) roleValue = 'faculty';
-      }
       if (roleValue == null) {
         debugPrint('❌ FIRESTORE: User role not found for uid=$uid');
         throw Exception('Unable to determine user role');
@@ -47,11 +39,9 @@ class AuthRepositoryImpl implements AuthRepository {
     required String role,
     required String fullName,
     required String phone,
-    // Faculty-only
     String? department,
     String? specialization,
     String? officeLocation,
-    // Student-only
     String? studentId,
   }) async {
     try {

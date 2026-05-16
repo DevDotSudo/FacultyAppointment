@@ -1,79 +1,60 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 
 class AppointmentStatusBadge extends StatelessWidget {
   final String status;
 
-  const AppointmentStatusBadge({
-    super.key,
-    required this.status,
-  });
+  const AppointmentStatusBadge({super.key, required this.status});
 
   @override
   Widget build(BuildContext context) {
-    final config = _getStatusConfig(status);
+    final textTheme = Theme.of(context).textTheme;
+    final config = _statusConfig(status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: config.bgColor,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        config.label,
-        style: GoogleFonts.inter(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
+        status[0].toUpperCase() + status.substring(1).toLowerCase(),
+        style: textTheme.labelSmall?.copyWith(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
           color: config.textColor,
         ),
       ),
     );
   }
 
-  _StatusConfig _getStatusConfig(String status) {
+  _StatusConfig _statusConfig(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
         return _StatusConfig(
-          label: 'Pending',
-          bgColor: AppColors.statusPendingBg,
-          textColor: AppColors.statusPendingText,
+          AppColors.statusPendingBg,
+          AppColors.statusPendingText,
         );
       case 'accepted':
         return _StatusConfig(
-          label: 'Accepted',
-          bgColor: AppColors.statusAcceptedBg,
-          textColor: AppColors.statusAcceptedText,
+          AppColors.statusAcceptedBg,
+          AppColors.statusAcceptedText,
         );
       case 'rejected':
         return _StatusConfig(
-          label: 'Rejected',
-          bgColor: AppColors.statusRejectedBg,
-          textColor: AppColors.statusRejectedText,
-        );
-      case 'cancelled':
-        return _StatusConfig(
-          label: 'Cancelled',
-          bgColor: AppColors.statusCancelledBg,
-          textColor: AppColors.statusCancelledText,
+          AppColors.statusRejectedBg,
+          AppColors.statusRejectedText,
         );
       default:
         return _StatusConfig(
-          label: status,
-          bgColor: AppColors.statusCancelledBg,
-          textColor: AppColors.statusCancelledText,
+          AppColors.statusCancelledBg,
+          AppColors.statusCancelledText,
         );
     }
   }
 }
 
 class _StatusConfig {
-  final String label;
   final Color bgColor;
   final Color textColor;
-
-  _StatusConfig({
-    required this.label,
-    required this.bgColor,
-    required this.textColor,
-  });
+  _StatusConfig(this.bgColor, this.textColor);
 }

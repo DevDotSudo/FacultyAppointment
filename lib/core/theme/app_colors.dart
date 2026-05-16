@@ -3,63 +3,62 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Primary
-  static const Color primaryBlue = Color(0xFF2563EB);
-  static const Color primaryDark = Color(0xFF1E3A8A);
-  static const Color primaryLight = Color(0xFF7AAACE);
-  static const Color primaryBg = Color(0xFF93C5FD);
-  static const Color primary = Color(0xFF2563EB);
+  // ── Brand ──
+  static const Color primary = Color(0xFF6366F1);       // Indigo
+  static const Color primaryDark = Color(0xFF4F46E5);
+  static const Color primaryLight = Color(0xFFA5B4FC);
+  static const Color primaryBg = Color(0xFFEEF2FF);
 
-  // Sidebar
-  static const Color darkNavy = Color(0xFF1E293B);
-  static const Color sidebarDark = Color(0xFF0F172A);
-  static const Color sidebarMid = Color(0xFF1E3A8A);
-  static const Color sidebarText = Color(0xFFFFFFFF);
-  static const Color activeNavBg = Color(0xFF2563EB);
-
-  // Backgrounds
-  static const Color lightGrayBg = Color(0xFFF8FAFC);
-  static const Color pageBackground = Color(0xFFF5F7FB);
-  static const Color background = Color(0xFFF5F7FB);
-
-  // Cards
-  static const Color cardWhite = Color(0xFFFFFFFF);
+  // ══ BACKWARD COMPATIBLE ALIASES ══
+  static const Color primaryBlue = primary;
   static const Color white = Color(0xFFFFFFFF);
-  static const Color cardBg = Color(0xFFFFFFFF);
-
-  // Borders
-  static const Color borderGray = Color(0xFFE2E8F0);
-  static const Color fieldBorder = Color(0xFF7AAACE);
-  static const Color fieldFill = Color(0xFFF7F8F0);
-
-  // Text
-  static const Color textDark = Color(0xFF1E293B);
-  static const Color textPrimary = Color(0xFF111827);
+  static const Color lightGrayBg = Color(0xFFF9FAFB);
+  static const Color cardWhite = Color(0xFFFFFFFF);
+  static const Color borderGray = Color(0xFFE5E7EB);
+  static const Color fieldBorder = Color(0xFFE5E7EB);
+  static const Color fieldFill = Color(0xFFF3F4F6);
+  static const Color textDark = Color(0xFF111827);
   static const Color textBody = Color(0xFF374151);
-  static const Color textMuted = Color(0xFF64748B);
+  static const Color textPrimary = Color(0xFF111827);
   static const Color textSecondary = Color(0xFF6B7280);
   static const Color textHint = Color(0xFF9CA3AF);
-
-  // Status
+  static const Color textMuted = Color(0xFF9CA3AF);
   static const Color statusPending = Color(0xFFF59E0B);
-  static const Color statusAccepted = Color(0xFF10B981);
+  static const Color statusAccepted = Color(0xFF22C55E);
   static const Color statusRejected = Color(0xFFEF4444);
   static const Color statusCancelled = Color(0xFF6B7280);
-
-  // Status backgrounds
-  static const Color statusPendingBg = Color(0xFFFEF3C7);
-  static const Color statusAcceptedBg = Color(0xFFD1FAE5);
-  static const Color statusRejectedBg = Color(0xFFFEE2E2);
+  static const Color statusPendingBg = Color(0xFFFFFBEB);
+  static const Color statusAcceptedBg = Color(0xFFF0FDF4);
+  static const Color statusRejectedBg = Color(0xFFFEF2F2);
   static const Color statusCancelledBg = Color(0xFFF3F4F6);
-
-  // Status text
   static const Color statusPendingText = Color(0xFFB45309);
   static const Color statusAcceptedText = Color(0xFF065F46);
   static const Color statusRejectedText = Color(0xFF991B1B);
   static const Color statusCancelledText = Color(0xFF374151);
-
-  // Utility
   static const Color success = Color(0xFF22C55E);
   static const Color warning = Color(0xFFF59E0B);
   static const Color danger = Color(0xFFEF4444);
+  static const Color darkNavy = Color(0xFF1E1F2B);
+  static const Color sidebarDark = Color(0xFF1E1F2B);
+  static const Color sidebarMid = Color(0xFF2A2B3D);
+  static const Color activeNavBg = Color(0xFF6366F1);
+  static const Color pageBackground = Color(0xFFF9FAFB);
+  static const Color background = Color(0xFFF9FAFB);
+  static const Color cardBg = Color(0xFFFFFFFF);
+  static const Color darkBg = Color(0xFF111118);
+  static const Color darkCard = Color(0xFF1C1C26);
+  static const Color darkBorder = Color(0xFF2D2D3A);
+  static const Color darkDivider = Color(0xFF262633);
+  static const Color darkText = Color(0xFFF1F1F6);
+  static const Color darkMuted = Color(0xFF8B8BA0);
+  static const Color darkHighlight = Color(0xFFE94560);
+  static const Color cardLight = Color(0xFFFFFFFF);
+  static const Color borderLight = Color(0xFFE5E7EB);
+  static const Color dividerLight = Color(0xFFF3F4F6);
+  static const Color darkAccent = Color(0xFF0F3460);
+  static const Color info = Color(0xFF3B82F6);
+  static const Color infoBg = Color(0xFFEFF6FF);
+  static const Color successBg = Color(0xFFF0FDF4);
+  static const Color warningBg = Color(0xFFFFFBEB);
+  static const Color dangerBg = Color(0xFFFEF2F2);
 }

@@ -3,43 +3,57 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 
 class DashboardCard extends StatelessWidget {
-  final String? title;
+  final String title;
   final Widget child;
-  final EdgeInsetsGeometry padding;
+  final Widget? trailing;
+  final IconData? titleIcon;
 
   const DashboardCard({
     super.key,
-    this.title,
+    required this.title,
     required this.child,
-    this.padding = const EdgeInsets.all(16),
+    this.trailing,
+    this.titleIcon,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.darkCard : Colors.white;
+    final border = isDark ? AppColors.darkBorder : const Color(0xFFEEEFF2);
+
     return Container(
-      padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.cardWhite,
-        border: Border.all(color: AppColors.borderGray),
-        borderRadius: BorderRadius.circular(8),
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: border),
+        boxShadow: isDark ? null : [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (title != null) ...[
-            Text(
-              title!,
-              style: GoogleFonts.inter(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textDark,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 12, 0),
+            child: Row(children: [
+              if (titleIcon != null) ...[
+                Icon(titleIcon, size: 16, color: AppColors.primary),
+                const SizedBox(width: 6),
+              ],
+              Expanded(
+                child: Text(title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.darkText : AppColors.textDark)),
               ),
-            ),
-            const SizedBox(height: 12),
-            Container(height: 1, color: AppColors.borderGray),
-            const SizedBox(height: 12),
-          ],
-          child,
+              ?trailing,
+            ]),
+          ),
+          const SizedBox(height: 2),
+          Divider(color: isDark ? AppColors.darkBorder : const Color(0xFFF0F1F3), height: 16),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: child,
+          ),
         ],
       ),
     );

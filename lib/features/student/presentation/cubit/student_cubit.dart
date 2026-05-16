@@ -32,7 +32,7 @@ class StudentCubit extends Cubit<StudentState> {
       int rejected = 0;
 
       final allSnapshots = await _firestore
-          .collection('appointments')
+          .collection('appointment_requests')
           .where('student_id', isEqualTo: userId)
           .get();
 

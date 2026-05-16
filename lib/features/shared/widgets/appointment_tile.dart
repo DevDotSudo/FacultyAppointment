@@ -9,6 +9,7 @@ class AppointmentTile extends StatelessWidget {
   final String purpose;
   final String status;
   final Widget? actionButton;
+  final VoidCallback? onTap;
 
   const AppointmentTile({
     super.key,
@@ -17,66 +18,69 @@ class AppointmentTile extends StatelessWidget {
     required this.purpose,
     required this.status,
     this.actionButton,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.cardWhite,
-        border: Border.all(color: AppColors.borderGray),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.borderGray,
-            child: Icon(Icons.person, color: AppColors.textMuted, size: 20),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final initials = name.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkCard : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: isDark ? AppColors.darkBorder : const Color(0xFFEEEFF2)),
+            boxShadow: isDark ? null : [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 1)),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textDark,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  dateTime,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  purpose,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: AppColors.textMuted,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+          child: Row(children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: Text(initials,
+                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary)),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          AppointmentStatusBadge(status: status),
-          if (actionButton != null) ...[
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(name, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.darkText : AppColors.textDark)),
+                const SizedBox(height: 2),
+                Row(children: [
+                  Icon(Icons.access_time_rounded, size: 11,
+                    color: isDark ? AppColors.darkMuted : AppColors.textMuted),
+                  const SizedBox(width: 3),
+                  Text(dateTime, style: GoogleFonts.inter(fontSize: 11,
+                    color: isDark ? AppColors.darkMuted : AppColors.textMuted)),
+                ]),
+                if (purpose.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(purpose, style: GoogleFonts.inter(fontSize: 11,
+                    color: isDark ? AppColors.darkMuted : AppColors.textSecondary),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                ],
+              ]),
+            ),
             const SizedBox(width: 8),
-            actionButton!,
-          ],
-        ],
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              AppointmentStatusBadge(status: status),
+              if (actionButton != null) ...[const SizedBox(height: 4), actionButton!],
+            ]),
+          ]),
+        ),
       ),
     );
   }

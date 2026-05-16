@@ -8,6 +8,7 @@ import '../cubit/auth_state.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/role_selector_widget.dart';
 import '../../domain/entities/user_entity.dart';
+import '../../../shared/widgets/dialog_helper.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -23,13 +24,9 @@ class _RegisterPageState extends State<RegisterPage> {
   final _confirmPasswordCtrl = TextEditingController();
   final _fullNameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
-
-  // Faculty-only
   final _departmentCtrl = TextEditingController();
   final _specializationCtrl = TextEditingController();
   final _officeLocationCtrl = TextEditingController();
-
-  // Student-only
   final _studentIdCtrl = TextEditingController();
 
   bool _obscurePass = true;
@@ -55,21 +52,17 @@ class _RegisterPageState extends State<RegisterPage> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     await context.read<AuthCubit>().registerUser(
-          email: _emailCtrl.text,
+          email: _emailCtrl.text.trim(),
           password: _passwordCtrl.text,
           role: _selectedRole,
-          fullName: _fullNameCtrl.text,
-          phone: _phoneCtrl.text,
-          // Faculty
-          department: _selectedRole == 'faculty' ? _departmentCtrl.text : null,
-          specialization:
-              _selectedRole == 'faculty' ? _specializationCtrl.text : null,
-          officeLocation:
-              _selectedRole == 'faculty' ? _officeLocationCtrl.text : null,
-          // Student
-          studentId: _selectedRole == 'student' ? _studentIdCtrl.text : null,
+          fullName: _fullNameCtrl.text.trim(),
+          phone: _phoneCtrl.text.trim(),
+          department: _selectedRole == 'faculty' ? _departmentCtrl.text.trim() : null,
+          specialization: _selectedRole == 'faculty' ? _specializationCtrl.text.trim() : null,
+          officeLocation: _selectedRole == 'faculty' ? _officeLocationCtrl.text.trim() : null,
+          studentId: _selectedRole == 'student' ? _studentIdCtrl.text.trim() : null,
         );
-    setState(() => _isLoading = false);
+    if (mounted) setState(() => _isLoading = false);
   }
 
   @override
@@ -79,274 +72,282 @@ class _RegisterPageState extends State<RegisterPage> {
         if (state is AuthSuccess) {
           if (state.user.role == UserRole.student) {
             context.goNamed('student-dashboard');
-          } else if (state.user.role == UserRole.faculty) {
+          } else {
             context.goNamed('faculty-dashboard');
           }
         } else if (state is AuthFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-          );
+          DialogHelper.showErrorDialog(context, title: 'Registration Failed', message: state.message);
         }
       },
       child: Scaffold(
-        backgroundColor: AppColors.lightGrayBg,
-        body: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 420),
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 24,
-                    offset: const Offset(0, 4),
+        backgroundColor: const Color(0xFFF0F2F5),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth > 800;
+            final form = _buildForm();
+            if (isWide) {
+              return Row(
+                children: [
+                  Expanded(child: _BrandPanel()),
+                  Expanded(
+                    child: Center(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 420),
+                          child: form,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
-              ),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Title
-                    Text(
-                      'Register',
-                      style: GoogleFonts.inter(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textDark,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Create Account',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Role
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Join as',
-                        style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textDark),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    RoleSelectorWidget(
-                      selectedRole: _selectedRole,
-                      onRoleChanged: (role) =>
-                          setState(() => _selectedRole = role),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Full Name
-                    AuthTextField(
-                      label: 'Full Name',
-                      hintText: 'John Doe',
-                      controller: _fullNameCtrl,
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Full name is required';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Email
-                    AuthTextField(
-                      label: 'Email',
-                      hintText: 'you@example.com',
-                      controller: _emailCtrl,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Email is required';
-                        if (!v.contains('@')) return 'Enter a valid email';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Phone
-                    AuthTextField(
-                      label: 'Phone',
-                      hintText: '+63 912 345 6789',
-                      controller: _phoneCtrl,
-                      keyboardType: TextInputType.phone,
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Phone number is required';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Role-specific fields
-                    if (_selectedRole == 'faculty') ...[
-                      AuthTextField(
-                        label: 'Department',
-                        hintText: 'e.g. Computer Science',
-                        controller: _departmentCtrl,
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Department is required';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      AuthTextField(
-                        label: 'Specialization',
-                        hintText: 'e.g. Machine Learning',
-                        controller: _specializationCtrl,
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Specialization is required';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      AuthTextField(
-                        label: 'Office Location',
-                        hintText: 'e.g. Room 301, Engineering Bldg',
-                        controller: _officeLocationCtrl,
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Office location is required';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                    ],
-                    if (_selectedRole == 'student') ...[
-                      AuthTextField(
-                        label: 'Student ID',
-                        hintText: 'e.g. 2021-00123',
-                        controller: _studentIdCtrl,
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Student ID is required';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                    ],
-
-                    // Password
-                    AuthTextField(
-                      label: 'Password',
-                      hintText: 'Enter your password',
-                      controller: _passwordCtrl,
-                      obscureText: _obscurePass,
-                      suffixIcon: IconButton(
-                        onPressed: () =>
-                            setState(() => _obscurePass = !_obscurePass),
-                        icon: Icon(
-                          _obscurePass
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          size: 20,
-                          color: AppColors.textHint,
-                        ),
-                      ),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Password is required';
-                        if (v.length < 6) return 'Minimum 6 characters';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 10),
-
-                    // Confirm Password
-                    AuthTextField(
-                      label: 'Confirm Password',
-                      hintText: 'Re-enter your password',
-                      controller: _confirmPasswordCtrl,
-                      obscureText: _obscureConfirmPass,
-                      suffixIcon: IconButton(
-                        onPressed: () => setState(
-                            () => _obscureConfirmPass = !_obscureConfirmPass),
-                        icon: Icon(
-                          _obscureConfirmPass
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          size: 20,
-                          color: AppColors.textHint,
-                        ),
-                      ),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Please confirm your password';
-                        if (v != _passwordCtrl.text) return 'Passwords do not match';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Register button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 44,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _onRegister,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryBlue,
-                          disabledBackgroundColor:
-                              AppColors.primaryBlue.withValues(alpha: 0.6),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text('Register'),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Login redirect
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Already have an account? ',
-                          style: GoogleFonts.inter(
-                              fontSize: 13, color: AppColors.textMuted),
-                        ),
-                        TextButton(
-                          onPressed: () => context.goNamed('login'),
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: Text(
-                            'Login',
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primaryBlue,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+              );
+            }
+            return Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: form,
                 ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Create account', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+          const SizedBox(height: 6),
+          Text('Fill in the details below to get started', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted)),
+          const SizedBox(height: 24),
+
+          // Role selector
+          Text('I AM A', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textDark, letterSpacing: 0.3)),
+          const SizedBox(height: 8),
+          RoleSelectorWidget(
+            selectedRole: _selectedRole,
+            onRoleChanged: (role) => setState(() => _selectedRole = role),
+          ),
+          const SizedBox(height: 20),
+
+          // Common fields
+          AuthTextField(
+            label: 'FULL NAME',
+            hintText: 'John Doe',
+            controller: _fullNameCtrl,
+            prefixIcon: const Icon(Icons.person_outline, size: 18, color: AppColors.textHint),
+            validator: (v) => v == null || v.isEmpty ? 'Full name is required' : null,
+          ),
+          const SizedBox(height: 14),
+          AuthTextField(
+            label: 'EMAIL ADDRESS',
+            hintText: 'you@example.com',
+            controller: _emailCtrl,
+            keyboardType: TextInputType.emailAddress,
+            prefixIcon: const Icon(Icons.mail_outline, size: 18, color: AppColors.textHint),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Email is required';
+              if (!v.contains('@')) return 'Enter a valid email';
+              return null;
+            },
+          ),
+          const SizedBox(height: 14),
+          AuthTextField(
+            label: 'PHONE NUMBER',
+            hintText: '+63 912 345 6789',
+            controller: _phoneCtrl,
+            keyboardType: TextInputType.phone,
+            prefixIcon: const Icon(Icons.phone_outlined, size: 18, color: AppColors.textHint),
+            validator: (v) => v == null || v.isEmpty ? 'Phone number is required' : null,
+          ),
+          const SizedBox(height: 14),
+
+          // Role-specific fields
+          if (_selectedRole == 'faculty') ...[
+            AuthTextField(
+              label: 'DEPARTMENT',
+              hintText: 'e.g. Computer Science',
+              controller: _departmentCtrl,
+              prefixIcon: const Icon(Icons.business_outlined, size: 18, color: AppColors.textHint),
+              validator: (v) => v == null || v.isEmpty ? 'Department is required' : null,
+            ),
+            const SizedBox(height: 14),
+            AuthTextField(
+              label: 'SPECIALIZATION',
+              hintText: 'e.g. Machine Learning',
+              controller: _specializationCtrl,
+              prefixIcon: const Icon(Icons.science_outlined, size: 18, color: AppColors.textHint),
+              validator: (v) => v == null || v.isEmpty ? 'Specialization is required' : null,
+            ),
+            const SizedBox(height: 14),
+            AuthTextField(
+              label: 'OFFICE LOCATION',
+              hintText: 'e.g. Room 301, Engineering Bldg',
+              controller: _officeLocationCtrl,
+              prefixIcon: const Icon(Icons.location_on_outlined, size: 18, color: AppColors.textHint),
+              validator: (v) => v == null || v.isEmpty ? 'Office location is required' : null,
+            ),
+            const SizedBox(height: 14),
+          ],
+          if (_selectedRole == 'student') ...[
+            AuthTextField(
+              label: 'STUDENT ID',
+              hintText: 'e.g. 2021-00123',
+              controller: _studentIdCtrl,
+              prefixIcon: const Icon(Icons.badge_outlined, size: 18, color: AppColors.textHint),
+              validator: (v) => v == null || v.isEmpty ? 'Student ID is required' : null,
+            ),
+            const SizedBox(height: 14),
+          ],
+
+          AuthTextField(
+            label: 'PASSWORD',
+            hintText: 'At least 6 characters',
+            controller: _passwordCtrl,
+            obscureText: _obscurePass,
+            prefixIcon: const Icon(Icons.lock_outline, size: 18, color: AppColors.textHint),
+            suffixIcon: IconButton(
+              onPressed: () => setState(() => _obscurePass = !_obscurePass),
+              icon: Icon(_obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: AppColors.textHint),
+            ),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Password is required';
+              if (v.length < 6) return 'Minimum 6 characters';
+              return null;
+            },
+          ),
+          const SizedBox(height: 14),
+          AuthTextField(
+            label: 'CONFIRM PASSWORD',
+            hintText: 'Re-enter your password',
+            controller: _confirmPasswordCtrl,
+            obscureText: _obscureConfirmPass,
+            prefixIcon: const Icon(Icons.lock_outline, size: 18, color: AppColors.textHint),
+            suffixIcon: IconButton(
+              onPressed: () => setState(() => _obscureConfirmPass = !_obscureConfirmPass),
+              icon: Icon(_obscureConfirmPass ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: AppColors.textHint),
+            ),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Please confirm your password';
+              if (v != _passwordCtrl.text) return 'Passwords do not match';
+              return null;
+            },
+          ),
+          const SizedBox(height: 24),
+
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _onRegister,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                elevation: 0,
+              ),
+              child: _isLoading
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Text('Create Account', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Already have an account? ', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted)),
+              GestureDetector(
+                onTap: () => context.goNamed('login'),
+                child: Text('Sign in', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BrandPanel extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(top: -60, left: -60, child: _Circle(200, Colors.white.withValues(alpha: 0.05))),
+          Positioned(bottom: -80, right: -80, child: _Circle(300, Colors.white.withValues(alpha: 0.05))),
+          Positioned(top: 120, right: -40, child: _Circle(140, Colors.white.withValues(alpha: 0.04))),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(48),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(Icons.calendar_month_rounded, size: 36, color: Colors.white),
+                  ),
+                  const SizedBox(height: 32),
+                  Text('Join the\nAppointment\nSystem',
+                    style: GoogleFonts.inter(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white, height: 1.2)),
+                  const SizedBox(height: 16),
+                  Text('Connect with faculty and manage\nyour appointments with ease.',
+                    style: GoogleFonts.inter(fontSize: 15, color: Colors.white.withValues(alpha: 0.75), height: 1.6)),
+                  const SizedBox(height: 48),
+                  ...[
+                    ('🎓', 'For students & faculty'),
+                    ('⚡', 'Quick & easy setup'),
+                    ('🔒', 'Secure & private'),
+                  ].map((item) => Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: Row(children: [
+                      Text(item.$1, style: const TextStyle(fontSize: 18)),
+                      const SizedBox(width: 12),
+                      Text(item.$2, style: GoogleFonts.inter(fontSize: 14, color: Colors.white.withValues(alpha: 0.85))),
+                    ]),
+                  )),
+                ],
               ),
             ),
           ),
-        ),
+        ],
       ),
+    );
+  }
+}
+
+class _Circle extends StatelessWidget {
+  final double size;
+  final Color color;
+  const _Circle(this.size, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size, height: size,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }
