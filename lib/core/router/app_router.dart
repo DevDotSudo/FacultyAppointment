@@ -6,10 +6,19 @@ import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/splash/presentation/cubit/splash_cubit.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
+import '../../features/student/presentation/cubit/student_cubit.dart';
 import '../../features/student/presentation/pages/student_dashboard_page.dart';
-import '../../features/student/presentation/pages/student_placeholder_pages.dart' as student;
+import '../../features/student/presentation/pages/my_appointments_page.dart';
+import '../../features/student/presentation/pages/book_appointment_page.dart';
+import '../../features/student/presentation/pages/faculty_list_page.dart';
+import '../../features/student/presentation/pages/appointment_detail_page.dart';
+import '../../features/student/presentation/pages/student_profile_page.dart';
+import '../../features/faculty/presentation/cubit/faculty_cubit.dart';
 import '../../features/faculty/presentation/pages/faculty_dashboard_page.dart';
-import '../../features/faculty/presentation/pages/faculty_placeholder_pages.dart' as faculty;
+import '../../features/faculty/presentation/pages/appointment_requests_page.dart';
+import '../../features/faculty/presentation/pages/manage_availability_page.dart';
+import '../../features/faculty/presentation/pages/faculty_profile_page.dart';
+import '../../features/faculty/presentation/pages/request_detail_page.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/',
@@ -18,10 +27,8 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/',
       name: 'splash',
-      builder: (context, state) => BlocProvider(
-        create: (_) => SplashCubit(),
-        child: const SplashPage(),
-      ),
+      builder: (context, state) =>
+          BlocProvider(create: (_) => SplashCubit(), child: const SplashPage()),
     ),
 
     // ── Auth ─────────────────────────────────────────────
@@ -29,7 +36,11 @@ final GoRouter appRouter = GoRouter(
       path: '/login',
       name: 'login',
       builder: (context, state) => BlocProvider(
-        create: (_) => AuthCubit(sl()),
+        create: (_) => AuthCubit(
+          loginUseCase: sl(),
+          registerUseCase: sl(),
+          logoutUseCase: sl(),
+        ),
         child: const LoginPage(),
       ),
     ),
@@ -37,7 +48,11 @@ final GoRouter appRouter = GoRouter(
       path: '/register',
       name: 'register',
       builder: (context, state) => BlocProvider(
-        create: (_) => AuthCubit(sl()),
+        create: (_) => AuthCubit(
+          loginUseCase: sl(),
+          registerUseCase: sl(),
+          logoutUseCase: sl(),
+        ),
         child: const RegisterPage(),
       ),
     ),
@@ -46,84 +61,92 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/student/dashboard',
       name: 'student-dashboard',
-      builder: (context, state) => const StudentDashboardPage(),
+      builder: (context, state) => BlocProvider(
+        create: (_) => sl<StudentCubit>()..loadDashboard(),
+        child: const StudentDashboardPage(),
+      ),
     ),
     GoRoute(
       path: '/student/my-appointments',
       name: 'student-my-appointments',
-      builder: (context, state) => const student.MyAppointmentsPage(),
+      builder: (context, state) => BlocProvider(
+        create: (_) => sl<StudentCubit>()..loadDashboard(),
+        child: const MyAppointmentsPage(),
+      ),
     ),
     GoRoute(
       path: '/student/book-appointment',
       name: 'student-book-appointment',
-      builder: (context, state) => const BookAppointmentPage(),
+      builder: (context, state) => BlocProvider(
+        create: (_) => sl<StudentCubit>()..loadDashboard(),
+        child: const BookAppointmentPage(),
+      ),
     ),
     GoRoute(
       path: '/student/faculty',
       name: 'student-faculty',
-      builder: (context, state) => const student.FacultyListPage(),
+      builder: (context, state) => BlocProvider(
+        create: (_) => sl<StudentCubit>()..loadDashboard(),
+        child: const FacultyListPage(),
+      ),
+    ),
+    GoRoute(
+      path: '/student/appointment-detail',
+      name: 'student-appointment-detail',
+      builder: (context, state) => BlocProvider(
+        create: (_) => sl<StudentCubit>()..loadDashboard(),
+        child: const AppointmentDetailPage(),
+      ),
     ),
     GoRoute(
       path: '/student/profile',
       name: 'student-profile',
-      builder: (context, state) => const student.StudentProfilePage(),
-    ),
-    GoRoute(
-      path: '/student/appointment-detail',
-      name: 'student-appointment-detail',
-      builder: (context, state) => const student.AppointmentDetailPage(),
-    ),
-    GoRoute(
-      path: '/student/appointment-detail',
-      name: 'student-appointment-detail',
-      builder: (context, state) => const AppointmentDetailPage(),
+      builder: (context, state) => BlocProvider(
+        create: (_) => sl<StudentCubit>()..loadDashboard(),
+        child: const StudentProfilePage(),
+      ),
     ),
 
     // ── Faculty ───────────────────────────────────────────
     GoRoute(
       path: '/faculty/dashboard',
       name: 'faculty-dashboard',
-      builder: (context, state) => const FacultyDashboardPage(),
+      builder: (context, state) => BlocProvider(
+        create: (_) => sl<FacultyCubit>()..loadDashboard(),
+        child: const FacultyDashboardPage(),
+      ),
     ),
     GoRoute(
       path: '/faculty/requests',
       name: 'faculty-requests',
-      builder: (context, state) => const faculty.AppointmentRequestsPage(),
+      builder: (context, state) => BlocProvider(
+        create: (_) => sl<FacultyCubit>()..loadDashboard(),
+        child: const AppointmentRequestsPage(),
+      ),
     ),
     GoRoute(
       path: '/faculty/availability',
       name: 'faculty-availability',
-      builder: (context, state) => const faculty.ManageAvailabilityPage(),
+      builder: (context, state) => BlocProvider(
+        create: (_) => sl<FacultyCubit>()..loadDashboard(),
+        child: const ManageAvailabilityPage(),
+      ),
     ),
     GoRoute(
       path: '/faculty/profile',
       name: 'faculty-profile',
-      builder: (context, state) => const faculty.FacultyProfilePage(),
+      builder: (context, state) => BlocProvider(
+        create: (_) => sl<FacultyCubit>()..loadDashboard(),
+        child: const FacultyProfilePage(),
+      ),
     ),
     GoRoute(
       path: '/faculty/request-detail',
       name: 'faculty-request-detail',
-      builder: (context, state) => const faculty.RequestDetailPage(),
-    ),
-    GoRoute(
-      path: '/faculty/requests',
-      name: 'faculty-requests',
-      builder: (context, state) => const faculty.AppointmentRequestsPage(),
-    ),
-    GoRoute(
-      path: '/faculty/availability',
-      name: 'faculty-availability',
-      builder: (context, state) => const faculty.ManageAvailabilityPage(),
-    ),
-    GoRoute(
-      path: '/faculty/profile',
-      name: 'faculty-profile',
-      builder: (context, state) => const faculty.FacultyProfilePage(),
-    ),
-    GoRoute(
-      path: '/faculty/request-detail',
-      name: 'faculty-request-detail',
-      builder: (context, state) => const faculty.RequestDetailPage(),
+      builder: (context, state) => BlocProvider(
+        create: (_) => sl<FacultyCubit>()..loadDashboard(),
+        child: const RequestDetailPage(),
+      ),
     ),
   ],
 );

@@ -1,108 +1,91 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../core/theme/app_colors.dart';
 
 class RequestTile extends StatelessWidget {
   final String studentName;
-  final String initials;
-  final String date;
-  final String time;
-  final VoidCallback? onViewTap;
+  final String dateTime;
+  final String purpose;
+  final VoidCallback? onView;
+  final Map<String, dynamic>? requestData;
 
   const RequestTile({
     super.key,
     required this.studentName,
-    required this.initials,
-    required this.date,
-    required this.time,
-    this.onViewTap,
+    required this.dateTime,
+    required this.purpose,
+    this.onView,
+    this.requestData,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: AppColors.cardWhite,
+        border: Border.all(color: AppColors.borderGray),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.warning.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
-              child: Text(
-                initials,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.warning,
-                ),
-              ),
-            ),
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: AppColors.borderGray,
+            child: Icon(Icons.person, color: AppColors.textMuted, size: 20),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   studentName,
-                  style: const TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: AppColors.textDark,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today_rounded, size: 13, color: AppColors.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      date,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(Icons.access_time_rounded, size: 13, color: AppColors.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      time,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                  ],
+                const SizedBox(height: 2),
+                Text(
+                  dateTime,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  purpose,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          TextButton(
-            onPressed: onViewTap,
-            style: TextButton.styleFrom(
-              backgroundColor: AppColors.primaryBlue,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          if (onView != null)
+            TextButton(
+              onPressed: onView,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'View',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: AppColors.primaryBlue,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-            child: const Text(
-              'View',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-          ),
         ],
       ),
     );

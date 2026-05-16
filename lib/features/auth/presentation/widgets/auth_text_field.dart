@@ -1,25 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 
 class AuthTextField extends StatelessWidget {
+  final String label;
+  final String? hintText;
+  final TextEditingController? controller;
+  final TextInputType? keyboardType;
+  final bool obscureText;
+  final Widget? suffixIcon;
+  final Widget? prefixIcon;
+  final String? Function(String?)? validator;
+  final int? maxLines;
+
   const AuthTextField({
     super.key,
     required this.label,
-    required this.hintText,
-    required this.controller,
+    this.hintText,
+    this.controller,
+    this.keyboardType,
     this.obscureText = false,
-    this.keyboardType = TextInputType.text,
     this.suffixIcon,
+    this.prefixIcon,
     this.validator,
+    this.maxLines = 1,
   });
-
-  final String label;
-  final String hintText;
-  final TextEditingController controller;
-  final bool obscureText;
-  final TextInputType keyboardType;
-  final Widget? suffixIcon;
-  final String? Function(String?)? validator;
 
   @override
   Widget build(BuildContext context) {
@@ -28,62 +33,43 @@ class AuthTextField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textBody,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDark,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         TextFormField(
           controller: controller,
-          obscureText: obscureText,
           keyboardType: keyboardType,
+          obscureText: obscureText,
+          maxLines: maxLines,
           validator: validator,
-          style: const TextStyle(
+          style: GoogleFonts.inter(
             fontSize: 14,
             color: AppColors.textDark,
           ),
           decoration: InputDecoration(
             hintText: hintText,
-            hintStyle: const TextStyle(
-              fontSize: 14,
+            hintStyle: GoogleFonts.inter(
+              fontSize: 13,
               color: AppColors.textHint,
             ),
             suffixIcon: suffixIcon,
-            filled: true,
-            fillColor: AppColors.fieldFill,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
+            prefixIcon: prefixIcon,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: const BorderSide(color: AppColors.borderGray),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                color: AppColors.fieldBorder,
-                width: 1,
-              ),
+              borderRadius: BorderRadius.circular(6),
+              borderSide: const BorderSide(color: AppColors.borderGray),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 1.5,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                color: Colors.red,
-                width: 1,
-              ),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                color: Colors.red,
-                width: 1.5,
-              ),
+              borderRadius: BorderRadius.circular(6),
+              borderSide: const BorderSide(color: AppColors.primaryBlue, width: 1.5),
             ),
           ),
         ),

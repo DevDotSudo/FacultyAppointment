@@ -1,239 +1,213 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../features/shared/widgets/sidebar_nav_widget.dart';
-import '../../../../features/shared/widgets/dashboard_header.dart';
-import '../../../../features/shared/widgets/stat_card_widget.dart';
-import '../../../../features/shared/widgets/dashboard_card.dart';
-import '../../../../features/shared/widgets/appointment_tile.dart';
-import '../../../../features/shared/widgets/quick_action_button.dart';
-import '../../../../features/shared/widgets/appointment_status_badge.dart';
-import '../../../../features/shared/widgets/responsive_layout.dart';
+import '../../../shared/widgets/dashboard_header.dart';
+import '../../../shared/widgets/stat_card_widget.dart';
+import '../../../shared/widgets/dashboard_card.dart';
+import '../../../shared/widgets/quick_action_button.dart';
+import '../../../shared/widgets/appointment_status_badge.dart';
+import '../../../shared/widgets/responsive_layout.dart';
+import '../../../shared/widgets/sidebar_nav_widget.dart';
 import '../cubit/student_cubit.dart';
+import '../cubit/student_state.dart';
 
 class StudentDashboardPage extends StatelessWidget {
   const StudentDashboardPage({super.key});
 
+  List<SidebarNavItem> _sidebarItems(BuildContext context) => [
+        SidebarNavItem(
+          label: 'Dashboard',
+          icon: Icons.dashboard,
+          isActive: true,
+          onTap: () => context.goNamed('student-dashboard'),
+        ),
+        SidebarNavItem(
+          label: 'Faculty',
+          icon: Icons.school,
+          onTap: () => context.goNamed('student-faculty'),
+        ),
+        SidebarNavItem(
+          label: 'My Appointments',
+          icon: Icons.calendar_today,
+          onTap: () => context.goNamed('student-my-appointments'),
+        ),
+        SidebarNavItem(
+          label: 'Profile',
+          icon: Icons.person,
+          onTap: () => context.goNamed('student-profile'),
+        ),
+      ];
+
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => StudentCubit()..loadDashboard(),
-      child: BlocBuilder<StudentCubit, dynamic>(
+    return ResponsiveLayout(
+      sidebarItems: _sidebarItems(context),
+      onLogout: () => context.goNamed('login'),
+      child: BlocBuilder<StudentCubit, StudentState>(
         builder: (context, state) {
           if (state is StudentLoading) {
-            return _buildLoading();
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state is StudentError) {
+            return Center(child: Text('Error: ${state.message}'));
           }
 
-          if (state is StudentLoaded) {
-            return ResponsiveLayout(
-              sidebar: _buildSidebar(context),
-              header: DashboardHeader(
-                name: 'John Doe',
-                subtitle: 'Student',
-                initials: 'JD',
-              ),
-              statCards: [
-                StatCardWidget(
-                  title: 'Total Appointments',
-                  value: state.totalAppointments,
-                  onViewAll: 'View all',
-                  onViewAllTap: () => context.push('/student/my-appointments'),
-                ),
-                StatCardWidget(
-                  title: 'Pending',
-                  value: state.pending,
-                  onViewAll: 'View all',
-                  onViewAllTap: () => context.push('/student/my-appointments'),
-                ),
-                StatCardWidget(
-                  title: 'Accepted',
-                  value: state.accepted,
-                  onViewAll: 'View all',
-                  onViewAllTap: () => context.push('/student/my-appointments'),
-                ),
-                StatCardWidget(
-                  title: 'Rejected',
-                  value: state.rejected,
-                  onViewAll: 'View all',
-                  onViewAllTap: () => context.push('/student/my-appointments'),
-                ),
-              ],
-              mainContent: DashboardCard(
-                title: 'Upcoming Appointment',
-                child: Column(
-                  children: [
-                    _buildUpcomingAppointment(state.upcomingAppointments[0]),
-                    const SizedBox(height: 16),
+          // Fetch real name from Firestore
+          return FutureBuilder<DocumentSnapshot>(
+            future: FirebaseFirestore.instance
+                .collection('students')
+                .doc(FirebaseAuth.instance.currentUser?.uid)
+                .get(),
+            builder: (context, snapshot) {
+              String fullName = 'Student';
+              if (snapshot.hasData && snapshot.data!.exists) {
+                fullName = snapshot.data!.get('full_name') as String? ?? 'Student';
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DashboardHeader(
+                    name: fullName,
+                    role: 'Student',
+                    initials: fullName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase(),
+                  ),
+                  const SizedBox(height: 20),
+
+                  if (state is StudentLoaded) ...[
+                    // Stats Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: StatCardWidget(
+                            label: 'Total Appointments',
+                            number: state.totalAppointments.toString(),
+                            onViewAll: () => context.goNamed('student-my-appointments'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: StatCardWidget(
+                            label: 'Pending',
+                            number: state.pending.toString(),
+                            onViewAll: () => context.goNamed('student-my-appointments'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: StatCardWidget(
+                            label: 'Accepted',
+                            number: state.accepted.toString(),
+                            onViewAll: () => context.goNamed('student-my-appointments'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: StatCardWidget(
+                            label: 'Rejected',
+                            number: state.rejected.toString(),
+                            onViewAll: () => context.goNamed('student-my-appointments'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Upcoming Appointment
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: DashboardCard(
+                            title: 'Upcoming Appointment',
+                            child: state.upcomingAppointments.isEmpty
+                                ? Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Text(
+                                      'No upcoming appointments',
+                                      style: GoogleFonts.inter(color: AppColors.textMuted),
+                                    ),
+                                  )
+                                : Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 18,
+                                        backgroundColor: AppColors.primaryBlue,
+                                        child: Text(
+                                          state.upcomingAppointments.first.facultyInitials,
+                                          style: GoogleFonts.inter(color: AppColors.white, fontSize: 12),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              state.upcomingAppointments.first.facultyName,
+                                              style: GoogleFonts.inter(
+                                                fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark,
+                                              ),
+                                            ),
+                                            Text(
+                                              '${state.upcomingAppointments.first.date} · ${state.upcomingAppointments.first.time}',
+                                              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted),
+                                            ),
+                                            Text(
+                                              state.upcomingAppointments.first.purpose,
+                                              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      AppointmentStatusBadge(status: state.upcomingAppointments.first.status),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: DashboardCard(
+                            title: 'Quick Actions',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                QuickActionButton(
+                                  icon: Icons.calendar_today,
+                                  label: 'Book Appointment',
+                                  onTap: () => context.goNamed('student-book-appointment'),
+                                ),
+                                const SizedBox(height: 8),
+                                QuickActionButton(
+                                  icon: Icons.visibility,
+                                  label: 'View Faculty Availability',
+                                  onTap: () => context.goNamed('student-faculty'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
                     SizedBox(
                       width: double.infinity,
-                      height: 42,
                       child: ElevatedButton(
-                        onPressed: () => context.push('/student/my-appointments'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryBlue,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'View All Appointments',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
+                        onPressed: () => context.goNamed('student-my-appointments'),
+                        child: const Text('View All Appointments'),
                       ),
                     ),
                   ],
-                ),
-              ),
-              quickActions: Column(
-                children: [
-                  QuickActionButton(
-                    label: 'Book Appointment',
-                    icon: Icons.add_circle_outline_rounded,
-                    onTap: () => context.push('/student/book-appointment'),
-                  ),
-                  const SizedBox(height: 12),
-                  QuickActionButton(
-                    label: 'View Faculty Availability',
-                    icon: Icons.calendar_view_day_rounded,
-                    onTap: () => context.push('/student/faculty'),
-                  ),
                 ],
-              ),
-            );
-          }
-
-          return _buildLoading();
+              );
+            },
+          );
         },
-      ),
-    );
-  }
-
-  Widget _buildUpcomingAppointment(dynamic appointment) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Center(
-              child: Text(
-                appointment.facultyInitials,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryBlue,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  appointment.facultyName,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      appointment.date,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(Icons.access_time_rounded, size: 14, color: AppColors.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      appointment.time,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  appointment.purpose,
-                  style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          AppointmentStatusBadge(status: appointment.status),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSidebar(BuildContext context) {
-    return SidebarNavWidget(
-      currentRoute: '/student/dashboard',
-      items: [
-        SidebarItem(
-          label: 'Dashboard',
-          icon: Icons.dashboard_rounded,
-          route: '/student/dashboard',
-          onTap: () {},
-        ),
-        SidebarItem(
-          label: 'Faculty',
-          icon: Icons.people_outline_rounded,
-          route: '/student/faculty',
-          onTap: () => context.push('/student/faculty'),
-        ),
-        SidebarItem(
-          label: 'My Appointments',
-          icon: Icons.calendar_month_rounded,
-          route: '/student/my-appointments',
-          onTap: () => context.push('/student/my-appointments'),
-        ),
-        SidebarItem(
-          label: 'Profile',
-          icon: Icons.person_outline_rounded,
-          route: '/student/profile',
-          onTap: () => context.push('/student/profile'),
-        ),
-      ],
-      onLogout: () => context.push('/login'),
-    );
-  }
-
-  Widget _buildLoading() {
-    return Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(
-          color: AppColors.primaryBlue,
-        ),
       ),
     );
   }

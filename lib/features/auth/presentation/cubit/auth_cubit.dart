@@ -1,36 +1,42 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'auth_state.dart';
 import '../../domain/entities/user_entity.dart';
+import '../../domain/usecases/login_usecase.dart';
+import '../../domain/usecases/register_usecase.dart';
+import '../../domain/usecases/logout_usecase.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 
 class AuthCubit extends Cubit<AuthState> {
-  final AuthRemoteDatasource _remoteDatasource;
-  AuthCubit(this._remoteDatasource) : super(AuthInitial());
+  final LoginUseCase _loginUseCase;
+  final RegisterUseCase _registerUseCase;
+  final LogoutUseCase _logoutUseCase;
+
+  AuthCubit({
+    required LoginUseCase loginUseCase,
+    required RegisterUseCase registerUseCase,
+    required LogoutUseCase logoutUseCase,
+  }) : _loginUseCase = loginUseCase,
+       _registerUseCase = registerUseCase,
+       _logoutUseCase = logoutUseCase,
+       super(AuthInitial());
 
   Future<void> login({required String email, required String password}) async {
     emit(AuthLoading());
     try {
-      final cred = await _remoteDatasource.signIn(email: email, password: password);
-      final user = cred.user;
+      await _loginUseCase(email: email, password: password);
+      final user = AuthRemoteDatasource().getCurrentUser();
       if (user == null) {
         emit(AuthFailure('Authentication failed. Please try again'));
         return;
       }
-      String? roleValue;
-      final studentDoc = await FirebaseFirestore.instance.collection('students').doc(user.uid).get();
-      if (studentDoc.exists) {
-        roleValue = 'student';
-      } else {
-        final facultyDoc = await FirebaseFirestore.instance.collection('faculty').doc(user.uid).get();
-        if (facultyDoc.exists) roleValue = 'faculty';
-      }
-      if (roleValue == null) {
+      // Read role from Firestore
+      final roleString = await AuthRemoteDatasource().getUserRole(user.uid);
+      if (roleString == null) {
         emit(AuthFailure('Unable to determine user role'));
         return;
       }
-      final role = roleValue == 'student' ? UserRole.student : UserRole.faculty;
+      final role = roleString == 'student' ? UserRole.student : UserRole.faculty;
       emit(AuthSuccess(UserEntity(id: user.uid, email: user.email ?? email, role: role)));
     } catch (e) {
       emit(AuthFailure(e.toString()));
@@ -52,27 +58,31 @@ class AuthCubit extends Cubit<AuthState> {
   }) async {
     emit(AuthLoading());
     try {
-      final cred = await _remoteDatasource.signUp(email: email, password: password);
-      final user = cred.user;
-      if (user == null) {
-        emit(AuthFailure('Registration failed'));
-        return;
-      }
-      await _remoteDatasource.insertUserProfile(
-        id: user.uid,
+      await _registerUseCase(
+        email: email,
+        password: password,
         role: role,
         fullName: fullName,
-        email: email,
         phone: phone,
         department: department,
         specialization: specialization,
         officeLocation: officeLocation,
         studentId: studentId,
       );
+      final user = AuthRemoteDatasource().getCurrentUser();
+      if (user == null) {
+        emit(AuthFailure('Registration failed'));
+        return;
+      }
       final roleEnum = role == 'student' ? UserRole.student : UserRole.faculty;
       emit(AuthSuccess(UserEntity(id: user.uid, email: email, role: roleEnum)));
     } catch (e) {
       emit(AuthFailure(e.toString()));
     }
+  }
+
+  Future<void> logout() async {
+    await _logoutUseCase.call();
+    emit(AuthInitial());
   }
 }

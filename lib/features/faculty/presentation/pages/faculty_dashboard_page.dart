@@ -1,158 +1,160 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../features/shared/widgets/sidebar_nav_widget.dart';
-import '../../../../features/shared/widgets/dashboard_header.dart';
-import '../../../../features/shared/widgets/stat_card_widget.dart';
-import '../../../../features/shared/widgets/dashboard_card.dart';
-import '../../../../features/shared/widgets/request_tile.dart';
-import '../../../../features/shared/widgets/quick_action_button.dart';
-import '../../../../features/shared/widgets/responsive_layout.dart';
+import '../../../shared/widgets/dashboard_header.dart';
+import '../../../shared/widgets/stat_card_widget.dart';
+import '../../../shared/widgets/dashboard_card.dart';
+import '../../../shared/widgets/quick_action_button.dart';
+import '../../../shared/widgets/request_tile.dart';
+import '../../../shared/widgets/responsive_layout.dart';
+import '../../../shared/widgets/sidebar_nav_widget.dart';
+import '../../../shared/widgets/dialog_helper.dart';
+import '../../domain/usecases/accept_request_usecase.dart';
+import '../../domain/usecases/reject_request_usecase.dart';
 import '../cubit/faculty_cubit.dart';
+import '../cubit/faculty_state.dart';
 
 class FacultyDashboardPage extends StatelessWidget {
   const FacultyDashboardPage({super.key});
 
+  List<SidebarNavItem> _sidebarItems(BuildContext context) => [
+        SidebarNavItem(label: 'Dashboard', icon: Icons.dashboard, isActive: true, onTap: () => context.goNamed('faculty-dashboard')),
+        SidebarNavItem(label: 'Requests', icon: Icons.list_alt, onTap: () => context.goNamed('faculty-requests')),
+        SidebarNavItem(label: 'Availability', icon: Icons.calendar_today, onTap: () => context.goNamed('faculty-availability')),
+        SidebarNavItem(label: 'Profile', icon: Icons.person, onTap: () => context.goNamed('faculty-profile')),
+      ];
+
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => FacultyCubit()..loadDashboard(),
-      child: BlocBuilder<FacultyCubit, dynamic>(
+    return ResponsiveLayout(
+      sidebarItems: _sidebarItems(context),
+      onLogout: () => context.goNamed('login'),
+      child: BlocBuilder<FacultyCubit, FacultyState>(
         builder: (context, state) {
           if (state is FacultyLoading) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state is FacultyError) {
+            return Center(child: Text('Error: ${state.message}'));
           }
 
-          if (state is FacultyLoaded) {
-            return ResponsiveLayout(
-              sidebar: _buildSidebar(context),
-              header: DashboardHeader(
-                name: 'Dr. Maria Santos',
-                subtitle: 'Faculty',
-                initials: 'MS',
-              ),
-              statCards: [
-                StatCardWidget(
-                  title: 'Total Requests',
-                  value: state.totalRequests,
-                  onViewAll: 'View all',
-                  onViewAllTap: () => context.push('/faculty/requests'),
-                ),
-                StatCardWidget(
-                  title: 'Pending',
-                  value: state.pending,
-                  onViewAll: 'View all',
-                  onViewAllTap: () => context.push('/faculty/requests'),
-                ),
-                StatCardWidget(
-                  title: 'Accepted',
-                  value: state.accepted,
-                  onViewAll: 'View all',
-                  onViewAllTap: () => context.push('/faculty/requests'),
-                ),
-                StatCardWidget(
-                  title: 'Rejected',
-                  value: state.rejected,
-                  onViewAll: 'View all',
-                  onViewAllTap: () => context.push('/faculty/requests'),
-                ),
-              ],
-              mainContent: DashboardCard(
-                title: 'Pending Requests',
-                child: Column(
-                  children: [
-                      ...state.pendingRequests.map((request) => RequestTile(
-                            studentName: request.studentName,
-                            initials: request.studentInitials,
-                            date: request.date,
-                            time: request.time,
-                            onViewTap: () => context.push('/faculty/requests'),
-                          )),
-                    const SizedBox(height: 16),
+          return FutureBuilder<DocumentSnapshot>(
+            future: FirebaseFirestore.instance.collection('faculty').doc(FirebaseAuth.instance.currentUser?.uid).get(),
+            builder: (context, snapshot) {
+              String fullName = 'Faculty';
+              if (snapshot.hasData && snapshot.data!.exists) {
+                fullName = snapshot.data!.get('full_name') as String? ?? 'Faculty';
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DashboardHeader(
+                    name: fullName,
+                    role: 'Faculty',
+                    initials: fullName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase(),
+                  ),
+                  const SizedBox(height: 20),
+
+                  if (state is FacultyLoaded) ...[
+                    Row(
+                      children: [
+                        Expanded(child: StatCardWidget(label: 'Total Requests', number: state.totalRequests.toString(), onViewAll: () => context.goNamed('faculty-requests'))),
+                        const SizedBox(width: 12),
+                        Expanded(child: StatCardWidget(label: 'Pending', number: state.pending.toString(), onViewAll: () => context.goNamed('faculty-requests'))),
+                        const SizedBox(width: 12),
+                        Expanded(child: StatCardWidget(label: 'Accepted', number: state.accepted.toString(), onViewAll: () => context.goNamed('faculty-requests'))),
+                        const SizedBox(width: 12),
+                        Expanded(child: StatCardWidget(label: 'Rejected', number: state.rejected.toString(), onViewAll: () => context.goNamed('faculty-requests'))),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: DashboardCard(
+                            title: 'Pending Requests',
+                            child: state.pendingRequests.isEmpty
+                                ? Padding(padding: const EdgeInsets.all(16), child: Text('No pending requests', style: GoogleFonts.inter(color: AppColors.textMuted)))
+                                : Column(
+                                    children: state.pendingRequests.map((req) => RequestTile(
+                                      studentName: req.studentName,
+                                      dateTime: '${req.date} · ${req.time}',
+                                      purpose: 'Appointment request',
+                                      onView: () {
+                                        DialogHelper.showViewRequestModal(
+                                          context,
+                                          studentName: req.studentName,
+                                          date: req.date,
+                                          time: req.time,
+                                          purpose: 'Appointment request',
+                                          onAccept: () {
+                                            DialogHelper.showAcceptRequestModal(
+                                              context,
+                                              studentName: req.studentName,
+                                              date: req.date,
+                                              time: req.time,
+                                              onConfirm: () {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(content: Text('Request accepted'), backgroundColor: AppColors.statusAccepted),
+                                                );
+                                              },
+                                            );
+                                          },
+                                          onReject: () {
+                                            DialogHelper.showRejectRequestModal(
+                                              context,
+                                              studentName: req.studentName,
+                                              onConfirm: () {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(content: Text('Request rejected'), backgroundColor: AppColors.statusRejected),
+                                                );
+                                              },
+                                            );
+                                          },
+                                        );
+                                      },
+                                    )).toList(),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: DashboardCard(
+                            title: 'Quick Actions',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                QuickActionButton(icon: Icons.calendar_today, label: 'Manage Availability', onTap: () => context.goNamed('faculty-availability')),
+                                const SizedBox(height: 8),
+                                QuickActionButton(icon: Icons.list_alt, label: 'View My Schedule', onTap: () => context.goNamed('faculty-availability')),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
-                      height: 42,
                       child: ElevatedButton(
-                        onPressed: () => context.push('/faculty/requests'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryBlue,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: const Text(
-                          'View All Requests',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
+                        onPressed: () => context.goNamed('faculty-requests'),
+                        child: const Text('View All Requests'),
                       ),
                     ),
                   ],
-                ),
-              ),
-              quickActions: Column(
-                children: [
-                  QuickActionButton(
-                    label: 'Manage Availability',
-                    icon: Icons.timeline_rounded,
-                    onTap: () => context.push('/faculty/availability'),
-                  ),
-                  const SizedBox(height: 12),
-                    QuickActionButton(
-                      label: 'View My Schedule',
-                      icon: Icons.calendar_month_rounded,
-                      onTap: () => context.push('/faculty/availability'),
-                    ),
                 ],
-              ),
-            );
-          }
-
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+              );
+            },
           );
         },
       ),
-    );
-  }
-
-  Widget _buildSidebar(BuildContext context) {
-    return SidebarNavWidget(
-      currentRoute: '/faculty/dashboard',
-      items: [
-        SidebarItem(
-          label: 'Dashboard',
-          icon: Icons.dashboard_rounded,
-          route: '/faculty/dashboard',
-          onTap: () {},
-        ),
-        SidebarItem(
-          label: 'Requests',
-          icon: Icons.mail_outline_rounded,
-          route: '/faculty/requests',
-          onTap: () => context.push('/faculty/requests'),
-        ),
-        SidebarItem(
-          label: 'Availability',
-          icon: Icons.calendar_today_rounded,
-          route: '/faculty/availability',
-          onTap: () => context.push('/faculty/availability'),
-        ),
-        SidebarItem(
-          label: 'Profile',
-          icon: Icons.person_outline_rounded,
-          route: '/faculty/profile',
-          onTap: () => context.push('/faculty/profile'),
-        ),
-      ],
-      onLogout: () => context.push('/login'),
     );
   }
 }

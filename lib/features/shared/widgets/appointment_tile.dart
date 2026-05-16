@@ -1,107 +1,81 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../core/theme/app_colors.dart';
 import 'appointment_status_badge.dart';
 
 class AppointmentTile extends StatelessWidget {
   final String name;
-  final String initials;
-  final String date;
-  final String time;
+  final String dateTime;
   final String purpose;
   final String status;
-  final VoidCallback? onViewTap;
+  final Widget? actionButton;
 
   const AppointmentTile({
     super.key,
     required this.name,
-    required this.initials,
-    required this.date,
-    required this.time,
+    required this.dateTime,
     required this.purpose,
     required this.status,
-    this.onViewTap,
+    this.actionButton,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: AppColors.cardWhite,
+        border: Border.all(color: AppColors.borderGray),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.primaryBlue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
-              child: Text(
-                initials,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primaryBlue,
-                ),
-              ),
-            ),
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: AppColors.borderGray,
+            child: Icon(Icons.person, color: AppColors.textMuted, size: 20),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: AppColors.textDark,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today_rounded, size: 13, color: AppColors.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      date,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(Icons.access_time_rounded, size: 13, color: AppColors.textMuted),
-                    const SizedBox(width: 4),
-                    Text(
-                      time,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                  ],
+                const SizedBox(height: 2),
+                Text(
+                  dateTime,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   purpose,
-                  style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           AppointmentStatusBadge(status: status),
+          if (actionButton != null) ...[
+            const SizedBox(width: 8),
+            actionButton!,
+          ],
         ],
       ),
     );
