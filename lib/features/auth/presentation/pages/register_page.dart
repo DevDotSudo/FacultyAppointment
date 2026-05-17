@@ -80,7 +80,7 @@ class _RegisterPageState extends State<RegisterPage> {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF0F2F5),
+        backgroundColor: AppColors.pageBackground,
         body: LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth > 800;
@@ -105,7 +105,7 @@ class _RegisterPageState extends State<RegisterPage> {
             }
             return Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: form,
@@ -119,160 +119,184 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Widget _buildForm() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Create account', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-          const SizedBox(height: 6),
-          Text('Fill in the details below to get started', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted)),
-          const SizedBox(height: 24),
-
-          // Role selector
-          Text('I AM A', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textDark, letterSpacing: 0.3)),
-          const SizedBox(height: 8),
-          RoleSelectorWidget(
-            selectedRole: _selectedRole,
-            onRoleChanged: (role) => setState(() => _selectedRole = role),
-          ),
-          const SizedBox(height: 20),
-
-          // Common fields
-          AuthTextField(
-            label: 'FULL NAME',
-            hintText: 'John Doe',
-            controller: _fullNameCtrl,
-            prefixIcon: const Icon(Icons.person_outline, size: 18, color: AppColors.textHint),
-            validator: (v) => v == null || v.isEmpty ? 'Full name is required' : null,
-          ),
-          const SizedBox(height: 14),
-          AuthTextField(
-            label: 'EMAIL ADDRESS',
-            hintText: 'you@example.com',
-            controller: _emailCtrl,
-            keyboardType: TextInputType.emailAddress,
-            prefixIcon: const Icon(Icons.mail_outline, size: 18, color: AppColors.textHint),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Email is required';
-              if (!v.contains('@')) return 'Enter a valid email';
-              return null;
-            },
-          ),
-          const SizedBox(height: 14),
-          AuthTextField(
-            label: 'PHONE NUMBER',
-            hintText: '+63 912 345 6789',
-            controller: _phoneCtrl,
-            keyboardType: TextInputType.phone,
-            prefixIcon: const Icon(Icons.phone_outlined, size: 18, color: AppColors.textHint),
-            validator: (v) => v == null || v.isEmpty ? 'Phone number is required' : null,
-          ),
-          const SizedBox(height: 14),
-
-          // Role-specific fields
-          if (_selectedRole == 'faculty') ...[
-            AuthTextField(
-              label: 'DEPARTMENT',
-              hintText: 'e.g. Computer Science',
-              controller: _departmentCtrl,
-              prefixIcon: const Icon(Icons.business_outlined, size: 18, color: AppColors.textHint),
-              validator: (v) => v == null || v.isEmpty ? 'Department is required' : null,
-            ),
-            const SizedBox(height: 14),
-            AuthTextField(
-              label: 'SPECIALIZATION',
-              hintText: 'e.g. Machine Learning',
-              controller: _specializationCtrl,
-              prefixIcon: const Icon(Icons.science_outlined, size: 18, color: AppColors.textHint),
-              validator: (v) => v == null || v.isEmpty ? 'Specialization is required' : null,
-            ),
-            const SizedBox(height: 14),
-            AuthTextField(
-              label: 'OFFICE LOCATION',
-              hintText: 'e.g. Room 301, Engineering Bldg',
-              controller: _officeLocationCtrl,
-              prefixIcon: const Icon(Icons.location_on_outlined, size: 18, color: AppColors.textHint),
-              validator: (v) => v == null || v.isEmpty ? 'Office location is required' : null,
-            ),
-            const SizedBox(height: 14),
-          ],
-          if (_selectedRole == 'student') ...[
-            AuthTextField(
-              label: 'STUDENT ID',
-              hintText: 'e.g. 2021-00123',
-              controller: _studentIdCtrl,
-              prefixIcon: const Icon(Icons.badge_outlined, size: 18, color: AppColors.textHint),
-              validator: (v) => v == null || v.isEmpty ? 'Student ID is required' : null,
-            ),
-            const SizedBox(height: 14),
-          ],
-
-          AuthTextField(
-            label: 'PASSWORD',
-            hintText: 'At least 6 characters',
-            controller: _passwordCtrl,
-            obscureText: _obscurePass,
-            prefixIcon: const Icon(Icons.lock_outline, size: 18, color: AppColors.textHint),
-            suffixIcon: IconButton(
-              onPressed: () => setState(() => _obscurePass = !_obscurePass),
-              icon: Icon(_obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: AppColors.textHint),
-            ),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Password is required';
-              if (v.length < 6) return 'Minimum 6 characters';
-              return null;
-            },
-          ),
-          const SizedBox(height: 14),
-          AuthTextField(
-            label: 'CONFIRM PASSWORD',
-            hintText: 'Re-enter your password',
-            controller: _confirmPasswordCtrl,
-            obscureText: _obscureConfirmPass,
-            prefixIcon: const Icon(Icons.lock_outline, size: 18, color: AppColors.textHint),
-            suffixIcon: IconButton(
-              onPressed: () => setState(() => _obscureConfirmPass = !_obscureConfirmPass),
-              icon: Icon(_obscureConfirmPass ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: AppColors.textHint),
-            ),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Please confirm your password';
-              if (v != _passwordCtrl.text) return 'Passwords do not match';
-              return null;
-            },
-          ),
-          const SizedBox(height: 24),
-
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _onRegister,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                elevation: 0,
-              ),
-              child: _isLoading
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text('Create Account', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Card(
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: isDark ? AppColors.darkCard : Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Already have an account? ', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted)),
-              GestureDetector(
-                onTap: () => context.goNamed('login'),
-                child: Text('Sign in', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary)),
+              Center(
+                child: Container(
+                  width: 56, height: 56,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [AppColors.primary, Color(0xFF8B5CF6)]),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.person_add_rounded, color: Colors.white, size: 28),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: Text('Create Account', style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+              ),
+              const SizedBox(height: 4),
+              Center(
+                child: Text('Fill in the details to get started', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted)),
+              ),
+              const SizedBox(height: 20),
+
+              // Role selector
+              Text('I AM A', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textDark, letterSpacing: 0.3)),
+              const SizedBox(height: 8),
+              RoleSelectorWidget(
+                selectedRole: _selectedRole,
+                onRoleChanged: (role) => setState(() => _selectedRole = role),
+              ),
+              const SizedBox(height: 16),
+
+              // Common fields
+              AuthTextField(
+                label: 'FULL NAME',
+                hintText: 'John Doe',
+                controller: _fullNameCtrl,
+                prefixIcon: const Icon(Icons.person_outline, size: 18, color: AppColors.textHint),
+                validator: (v) => v == null || v.isEmpty ? 'Full name is required' : null,
+              ),
+              const SizedBox(height: 12),
+              AuthTextField(
+                label: 'EMAIL ADDRESS',
+                hintText: 'you@example.com',
+                controller: _emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                prefixIcon: const Icon(Icons.mail_outline, size: 18, color: AppColors.textHint),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Email is required';
+                  if (!v.contains('@')) return 'Enter a valid email';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              AuthTextField(
+                label: 'PHONE NUMBER',
+                hintText: '+63 912 345 6789',
+                controller: _phoneCtrl,
+                keyboardType: TextInputType.phone,
+                prefixIcon: const Icon(Icons.phone_outlined, size: 18, color: AppColors.textHint),
+                validator: (v) => v == null || v.isEmpty ? 'Phone number is required' : null,
+              ),
+              const SizedBox(height: 12),
+
+              // Role-specific fields
+              if (_selectedRole == 'faculty') ...[
+                AuthTextField(
+                  label: 'DEPARTMENT',
+                  hintText: 'e.g. Computer Science',
+                  controller: _departmentCtrl,
+                  prefixIcon: const Icon(Icons.business_outlined, size: 18, color: AppColors.textHint),
+                  validator: (v) => v == null || v.isEmpty ? 'Department is required' : null,
+                ),
+                const SizedBox(height: 12),
+                AuthTextField(
+                  label: 'SPECIALIZATION',
+                  hintText: 'e.g. Machine Learning',
+                  controller: _specializationCtrl,
+                  prefixIcon: const Icon(Icons.science_outlined, size: 18, color: AppColors.textHint),
+                  validator: (v) => v == null || v.isEmpty ? 'Specialization is required' : null,
+                ),
+                const SizedBox(height: 12),
+                AuthTextField(
+                  label: 'OFFICE LOCATION',
+                  hintText: 'e.g. Room 301, Engineering Bldg',
+                  controller: _officeLocationCtrl,
+                  prefixIcon: const Icon(Icons.location_on_outlined, size: 18, color: AppColors.textHint),
+                  validator: (v) => v == null || v.isEmpty ? 'Office location is required' : null,
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (_selectedRole == 'student') ...[
+                AuthTextField(
+                  label: 'STUDENT ID',
+                  hintText: 'e.g. 2021-00123',
+                  controller: _studentIdCtrl,
+                  prefixIcon: const Icon(Icons.badge_outlined, size: 18, color: AppColors.textHint),
+                  validator: (v) => v == null || v.isEmpty ? 'Student ID is required' : null,
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              AuthTextField(
+                label: 'PASSWORD',
+                hintText: 'At least 6 characters',
+                controller: _passwordCtrl,
+                obscureText: _obscurePass,
+                prefixIcon: const Icon(Icons.lock_outline, size: 18, color: AppColors.textHint),
+                suffixIcon: IconButton(
+                  onPressed: () => setState(() => _obscurePass = !_obscurePass),
+                  icon: Icon(_obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: AppColors.textHint),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Password is required';
+                  if (v.length < 6) return 'Minimum 6 characters';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              AuthTextField(
+                label: 'CONFIRM PASSWORD',
+                hintText: 'Re-enter your password',
+                controller: _confirmPasswordCtrl,
+                obscureText: _obscureConfirmPass,
+                prefixIcon: const Icon(Icons.lock_outline, size: 18, color: AppColors.textHint),
+                suffixIcon: IconButton(
+                  onPressed: () => setState(() => _obscureConfirmPass = !_obscureConfirmPass),
+                  icon: Icon(_obscureConfirmPass ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 18, color: AppColors.textHint),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Please confirm your password';
+                  if (v != _passwordCtrl.text) return 'Passwords do not match';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _onRegister,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    elevation: 0,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : Text('Create Account', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Already have an account? ', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted)),
+                  GestureDetector(
+                    onTap: () => context.goNamed('login'),
+                    child: Text('Sign in', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

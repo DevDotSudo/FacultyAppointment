@@ -12,9 +12,18 @@ import '../../../shared/widgets/quick_action_button.dart';
 import '../../../shared/widgets/request_tile.dart';
 import '../../../shared/widgets/dialog_helper.dart';
 import '../../../shared/widgets/simple_chart.dart';
+import '../../domain/usecases/accept_request_usecase.dart';
+import '../../domain/usecases/reject_request_usecase.dart';
 
-class FacultyDashboardPage extends StatelessWidget {
+class FacultyDashboardPage extends StatefulWidget {
   const FacultyDashboardPage({super.key});
+  @override
+  State<FacultyDashboardPage> createState() => _FacultyDashboardPageState();
+}
+
+class _FacultyDashboardPageState extends State<FacultyDashboardPage> {
+  final _acceptUseCase = AcceptRequestUseCase();
+  final _rejectUseCase = RejectRequestUseCase();
 
   @override
   Widget build(BuildContext context) {
@@ -128,15 +137,25 @@ class FacultyDashboardPage extends StatelessWidget {
                                     studentName: d['student_name'] as String? ?? 'Student',
                                     dateTime: '${d['date'] ?? ''} · ${d['time'] ?? ''}',
                                     purpose: d['purpose'] as String? ?? '',
-                                    onAccept: () {
-                                      FirebaseFirestore.instance.collection('appointment_requests').doc(doc.id).update({'status': 'accepted'});
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Request accepted ✓'), backgroundColor: AppColors.success));
+                                    onAccept: () async {
+                                      await _acceptUseCase.call(
+                                        requestId: doc.id,
+                                        studentId: d['student_id'] as String? ?? '',
+                                      );
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Request accepted ✓'), backgroundColor: AppColors.success));
+                                      }
                                     },
-                                    onReject: () {
-                                      FirebaseFirestore.instance.collection('appointment_requests').doc(doc.id).update({'status': 'rejected'});
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Request rejected'), backgroundColor: AppColors.danger));
+                                    onReject: () async {
+                                      await _rejectUseCase.call(
+                                        requestId: doc.id,
+                                        studentId: d['student_id'] as String? ?? '',
+                                      );
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Request rejected'), backgroundColor: AppColors.danger));
+                                      }
                                     },
                                     onView: () => DialogHelper.showViewRequestModal(
                                       context,
@@ -144,11 +163,17 @@ class FacultyDashboardPage extends StatelessWidget {
                                       date: d['date'] as String? ?? '',
                                       time: d['time'] as String? ?? '',
                                       purpose: d['purpose'] as String? ?? '',
-                                      onAccept: () {
-                                        FirebaseFirestore.instance.collection('appointment_requests').doc(doc.id).update({'status': 'accepted'});
+                                      onAccept: () async {
+                                        await _acceptUseCase.call(
+                                          requestId: doc.id,
+                                          studentId: d['student_id'] as String? ?? '',
+                                        );
                                       },
-                                      onReject: () {
-                                        FirebaseFirestore.instance.collection('appointment_requests').doc(doc.id).update({'status': 'rejected'});
+                                      onReject: () async {
+                                        await _rejectUseCase.call(
+                                          requestId: doc.id,
+                                          studentId: d['student_id'] as String? ?? '',
+                                        );
                                       },
                                     ),
                                   );

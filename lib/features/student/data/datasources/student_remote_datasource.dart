@@ -75,4 +75,38 @@ class StudentRemoteDatasource {
       rethrow;
     }
   }
+
+  Future<void> bookAppointment(Map<String, dynamic> data) async {
+    try {
+      data['created_at'] = FieldValue.serverTimestamp();
+      data['updated_at'] = FieldValue.serverTimestamp();
+      await _firestore.collection('appointment_requests').add(data);
+    } catch (e) {
+      debugPrint('❌ FIRESTORE: bookAppointment failed — $e');
+      rethrow;
+    }
+  }
+
+  Future<void> cancelAppointment(String requestId) async {
+    try {
+      await _firestore.collection('appointment_requests').doc(requestId).update({
+        'status': 'cancelled',
+        'updated_at': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('❌ FIRESTORE: cancelAppointment failed for requestId=$requestId — $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getStudentProfileById(String studentId) async {
+    try {
+      final doc = await _firestore.collection('students').doc(studentId).get();
+      if (!doc.exists) throw Exception('Student profile not found');
+      return doc.data()!;
+    } catch (e) {
+      debugPrint('❌ FIRESTORE: getStudentProfileById failed for studentId=$studentId — $e');
+      rethrow;
+    }
+  }
 }

@@ -28,6 +28,7 @@ import 'package:faculty_appointment/features/faculty/domain/usecases/update_prof
 import 'package:faculty_appointment/features/faculty/presentation/cubit/faculty_cubit.dart';
 import 'package:faculty_appointment/features/faculty/domain/repositories/faculty_repository.dart';
 import 'package:faculty_appointment/features/student/domain/repositories/student_repository.dart';
+import 'package:faculty_appointment/features/shared/widgets/notification_service.dart';
 
 final sl = GetIt.instance;
 
@@ -65,6 +66,9 @@ Future<void> init() async {
     sl.registerLazySingleton(() => RejectRequestUseCase());
     sl.registerLazySingleton(() => ManageAvailabilityUseCase());
     sl.registerLazySingleton(() => UpdateProfileUseCase());
+
+    // ── Services ──
+    sl.registerLazySingleton(() => NotificationService());
 
     // ── Cubits ──
     sl.registerFactory(() => AuthCubit(

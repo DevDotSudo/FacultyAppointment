@@ -276,7 +276,33 @@ class DialogHelper {
     );
   }
 
-  // ── Add/Edit Schedule ──
+  /// Formats a TimeOfDay to a display string like "9:00 AM"
+  static String _formatTime(TimeOfDay time) {
+    final hour = time.hourOfPeriod;
+    final minute = time.minute.toString().padLeft(2, '0');
+    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+    return '${hour == 0 ? 12 : hour}:$minute $period';
+  }
+
+  /// Parses a time string like "9:00 AM" back to a TimeOfDay
+  static TimeOfDay? _parseTime(String timeStr) {
+    try {
+      final parts = timeStr.split(' ');
+      if (parts.length != 2) return null;
+      final timeParts = parts[0].split(':');
+      if (timeParts.length != 2) return null;
+      int hour = int.parse(timeParts[0]);
+      final minute = int.parse(timeParts[1]);
+      final period = parts[1];
+      if (period == 'PM' && hour != 12) hour += 12;
+      if (period == 'AM' && hour == 12) hour = 0;
+      return TimeOfDay(hour: hour, minute: minute);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ── Add/Edit Schedule with native clock-style time picker ──
   static Future<void> showAddScheduleModal(
     BuildContext context, {
     String? initialDay,
@@ -284,61 +310,117 @@ class DialogHelper {
     String? initialEnd,
     required void Function(String day, String startTime, String endTime) onSave,
   }) {
-    final dayController = TextEditingController(text: initialDay ?? 'Monday');
-    final startController = TextEditingController(text: initialStart ?? '');
-    final endController = TextEditingController(text: initialEnd ?? '');
+    final days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    String selectedDay = initialDay ?? 'Monday';
+    TimeOfDay selectedStart = _parseTime(initialStart ?? '') ?? const TimeOfDay(hour: 9, minute: 0);
+    TimeOfDay selectedEnd = _parseTime(initialEnd ?? '') ?? const TimeOfDay(hour: 12, minute: 0);
     final isEdit = initialDay != null;
 
     return showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (ctx) => CustomDialog(
-        title: isEdit ? 'Edit Schedule' : 'Add Schedule',
-        actions: [
-          TextButton(onPressed: () { dayController.dispose(); startController.dispose(); endController.dispose(); Navigator.of(ctx).pop(); },
-            child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textMuted))),
-          const SizedBox(width: 8),
-          ElevatedButton(onPressed: () {
-            final day = dayController.text;
-            final start = startController.text;
-            final end = endController.text;
-            dayController.dispose(); startController.dispose(); endController.dispose();
-            Navigator.of(ctx).pop();
-            onSave(day, start, end);
-          },
-            child: Text(isEdit ? 'Save Changes' : 'Add')),
-        ],
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Align(alignment: Alignment.centerLeft,
-            child: Text('Day', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark))),
-          const SizedBox(height: 4),
-          DropdownButtonFormField<String>(
-            initialValue: dayController.text.isNotEmpty ? dayController.text : 'Monday',
-            items: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-                .map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
-            onChanged: (v) => dayController.text = v ?? '',
-            decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.borderGray)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12)),
-          ),
-          const SizedBox(height: 12),
-          Row(children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Start Time', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-              const SizedBox(height: 4),
-              TextField(controller: startController, decoration: InputDecoration(hintText: 'e.g. 9:00 AM',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.borderGray)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12))),
-            ])),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('End Time', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-              const SizedBox(height: 4),
-              TextField(controller: endController, decoration: InputDecoration(hintText: 'e.g. 12:00 PM',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.borderGray)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12))),
-            ])),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => CustomDialog(
+          title: isEdit ? 'Edit Schedule' : 'Add Schedule',
+          actions: [
+            TextButton(onPressed: () { Navigator.of(ctx).pop(); },
+              child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textMuted))),
+            const SizedBox(width: 8),
+            ElevatedButton(onPressed: () {
+              Navigator.of(ctx).pop();
+              onSave(selectedDay, _formatTime(selectedStart), _formatTime(selectedEnd));
+            },
+              child: Text(isEdit ? 'Save Changes' : 'Add')),
+          ],
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Align(alignment: Alignment.centerLeft,
+              child: Text('Day', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark))),
+            const SizedBox(height: 4),
+            DropdownButtonFormField<String>(
+              initialValue: selectedDay,
+              items: days.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+              onChanged: (v) => setDialogState(() => selectedDay = v ?? selectedDay),
+              decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.borderGray)),
+                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12)),
+            ),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Start Time', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                const SizedBox(height: 4),
+                InkWell(
+                  onTap: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: selectedStart,
+                      helpText: 'Select start time',
+                    );
+                    if (picked != null) {
+                      setDialogState(() => selectedStart = picked);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.borderGray),
+                      borderRadius: BorderRadius.circular(10),
+                      color: AppColors.fieldFill,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.access_time_rounded, size: 16, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatTime(selectedStart),
+                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark),
+                        ),
+                        const Spacer(),
+                        Icon(Icons.edit_calendar_rounded, size: 16, color: AppColors.textHint),
+                      ],
+                    ),
+                  ),
+                ),
+              ])),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('End Time', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                const SizedBox(height: 4),
+                InkWell(
+                  onTap: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: selectedEnd,
+                      helpText: 'Select end time',
+                    );
+                    if (picked != null) {
+                      setDialogState(() => selectedEnd = picked);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.borderGray),
+                      borderRadius: BorderRadius.circular(10),
+                      color: AppColors.fieldFill,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.access_time_rounded, size: 16, color: AppColors.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatTime(selectedEnd),
+                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark),
+                        ),
+                        const Spacer(),
+                        Icon(Icons.edit_calendar_rounded, size: 16, color: AppColors.textHint),
+                      ],
+                    ),
+                  ),
+                ),
+              ])),
+            ]),
           ]),
-        ]),
+        ),
       ),
     );
   }

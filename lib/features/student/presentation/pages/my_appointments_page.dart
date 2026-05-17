@@ -94,7 +94,11 @@ class _MyAppointmentsPageState extends State<MyAppointmentsPage> {
                           facultyName: d['faculty_name'] as String? ?? 'Faculty',
                           onConfirm: () async {
                             try {
-                              await _cancelUseCase.call(requestId: doc.id);
+                              await _cancelUseCase.call(
+                                requestId: doc.id,
+                                facultyId: d['faculty_id'] as String? ?? '',
+                                studentName: FirebaseAuth.instance.currentUser?.displayName ?? 'A student',
+                              );
                               if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Appointment cancelled'), backgroundColor: AppColors.danger)); }
                             } catch (e) {

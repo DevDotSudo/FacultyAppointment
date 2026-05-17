@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import 'sidebar_nav_widget.dart';
 import '../../../core/utils/responsive.dart';
+import 'notification_dialog.dart';
 
 
 class AppShell extends StatefulWidget {
@@ -134,6 +135,10 @@ class _AppShellState extends State<AppShell> {
         Text('AppointEase', style: GoogleFonts.inter(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
       ]),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined, size: 20, color: Colors.white70),
+          onPressed: () => NotificationDialog.showNotifications(context),
+        ),
         IconButton(
           icon: const Icon(Icons.logout_rounded, size: 20, color: Colors.white54),
           onPressed: () => _confirmLogout(context),

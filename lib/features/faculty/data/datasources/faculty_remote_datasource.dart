@@ -65,4 +65,69 @@ class FacultyRemoteDatasource {
       rethrow;
     }
   }
+
+  Future<void> updateProfile(String userId, Map<String, dynamic> data) async {
+    try {
+      data['updated_at'] = FieldValue.serverTimestamp();
+      await _firestore.collection('faculty').doc(userId).update(data);
+    } catch (e) {
+      debugPrint('❌ FIRESTORE: updateProfile failed for userId=$userId — $e');
+      rethrow;
+    }
+  }
+
+  Future<void> acceptRequest(String requestId, {String? notes}) async {
+    try {
+      await _firestore.collection('appointment_requests').doc(requestId).update({
+        'status': 'accepted',
+        'notes': notes ?? '',
+        'updated_at': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('❌ FIRESTORE: acceptRequest failed for requestId=$requestId — $e');
+      rethrow;
+    }
+  }
+
+  Future<void> rejectRequest(String requestId, {String? reason}) async {
+    try {
+      await _firestore.collection('appointment_requests').doc(requestId).update({
+        'status': 'rejected',
+        'rejection_reason': reason ?? '',
+        'updated_at': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('❌ FIRESTORE: rejectRequest failed for requestId=$requestId — $e');
+      rethrow;
+    }
+  }
+
+  Future<void> addAvailability(Map<String, dynamic> data) async {
+    try {
+      data['created_at'] = FieldValue.serverTimestamp();
+      await _firestore.collection('faculty_availability').add(data);
+    } catch (e) {
+      debugPrint('❌ FIRESTORE: addAvailability failed — $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateAvailability(String scheduleId, Map<String, dynamic> data) async {
+    try {
+      data['updated_at'] = FieldValue.serverTimestamp();
+      await _firestore.collection('faculty_availability').doc(scheduleId).update(data);
+    } catch (e) {
+      debugPrint('❌ FIRESTORE: updateAvailability failed for scheduleId=$scheduleId — $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteAvailability(String scheduleId) async {
+    try {
+      await _firestore.collection('faculty_availability').doc(scheduleId).delete();
+    } catch (e) {
+      debugPrint('❌ FIRESTORE: deleteAvailability failed for scheduleId=$scheduleId — $e');
+      rethrow;
+    }
+  }
 }

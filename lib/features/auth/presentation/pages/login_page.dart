@@ -56,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF0F2F5),
+        backgroundColor: AppColors.pageBackground,
         body: LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth >= Responsive.tablet;
@@ -69,7 +69,7 @@ class _LoginPageState extends State<LoginPage> {
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.all(48),
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 400),
+                          constraints: const BoxConstraints(maxWidth: 420),
                           child: _LoginForm(
                             formKey: _formKey,
                             emailCtrl: _emailCtrl,
@@ -88,12 +88,9 @@ class _LoginPageState extends State<LoginPage> {
             }
             return Center(
               child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(
-                  horizontal: constraints.maxWidth < Responsive.mobileL ? 16 : 24,
-                  vertical: 40,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 400),
+                  constraints: const BoxConstraints(maxWidth: 420),
                   child: _LoginForm(
                     formKey: _formKey,
                     emailCtrl: _emailCtrl,
@@ -210,102 +207,127 @@ class _LoginForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Form(
-      key: formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Welcome back', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-          const SizedBox(height: 6),
-          Text('Sign in to your account to continue', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted)),
-          const SizedBox(height: 32),
-
-          AuthTextField(
-            label: 'EMAIL ADDRESS',
-            hintText: 'you@example.com',
-            controller: emailCtrl,
-            keyboardType: TextInputType.emailAddress,
-            prefixIcon: const Icon(Icons.mail_outline, size: 18, color: AppColors.textHint),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Email is required';
-              if (!v.contains('@')) return 'Enter a valid email';
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-
-          AuthTextField(
-            label: 'PASSWORD',
-            hintText: 'Enter your password',
-            controller: passwordCtrl,
-            obscureText: obscurePass,
-            prefixIcon: const Icon(Icons.lock_outline, size: 18, color: AppColors.textHint),
-            suffixIcon: IconButton(
-              onPressed: onToggleObscure,
-              icon: Icon(obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  size: 18, color: AppColors.textHint),
-            ),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Password is required';
-              if (v.length < 6) return 'Minimum 6 characters';
-              return null;
-            },
-          ),
-
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {},
-              style: TextButton.styleFrom(padding: const EdgeInsets.only(top: 6), minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-              child: Text('Forgot password?', style: GoogleFonts.inter(fontSize: 13, color: AppColors.primary)),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: isLoading ? null : onLogin,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                elevation: 0,
-              ),
-              child: isLoading
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text('Sign In', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          Row(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Card(
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: isDark ? AppColors.darkCard : Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Form(
+          key: formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Expanded(child: Divider()),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text("Don't have an account?", style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted)),
+              // App icon
+              Center(
+                child: Container(
+                  width: 56, height: 56,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [AppColors.primary, Color(0xFF8B5CF6)]),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.calendar_month_rounded, color: Colors.white, size: 28),
+                ),
               ),
-              const Expanded(child: Divider()),
+              const SizedBox(height: 20),
+              Center(
+                child: Text('Welcome back', style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+              ),
+              const SizedBox(height: 4),
+              Center(
+                child: Text('Sign in to your account', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted)),
+              ),
+              const SizedBox(height: 28),
+
+              AuthTextField(
+                label: 'EMAIL ADDRESS',
+                hintText: 'you@example.com',
+                controller: emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                prefixIcon: const Icon(Icons.mail_outline, size: 18, color: AppColors.textHint),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Email is required';
+                  if (!v.contains('@')) return 'Enter a valid email';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              AuthTextField(
+                label: 'PASSWORD',
+                hintText: 'Enter your password',
+                controller: passwordCtrl,
+                obscureText: obscurePass,
+                prefixIcon: const Icon(Icons.lock_outline, size: 18, color: AppColors.textHint),
+                suffixIcon: IconButton(
+                  onPressed: onToggleObscure,
+                  icon: Icon(obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 18, color: AppColors.textHint),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Password is required';
+                  if (v.length < 6) return 'Minimum 6 characters';
+                  return null;
+                },
+              ),
+
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {},
+                  style: TextButton.styleFrom(padding: const EdgeInsets.only(top: 6), minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                  child: Text('Forgot password?', style: GoogleFonts.inter(fontSize: 13, color: AppColors.primary)),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : onLogin,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.6),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    elevation: 0,
+                  ),
+                  child: isLoading
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : Text('Sign In', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              Row(
+                children: [
+                  const Expanded(child: Divider()),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text("Don't have an account?", style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted)),
+                  ),
+                  const Expanded(child: Divider()),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: () => context.goNamed('register'),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.primary),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: Text('Create an account', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 16),
-
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: OutlinedButton(
-              onPressed: () => context.goNamed('register'),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              child: Text('Create an account', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.primary)),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -144,10 +144,10 @@ class AppointmentDetailPage extends StatelessWidget {
         children: List.generate(steps.length * 2 - 1, (index) {
           if (index.isOdd) {
             return Expanded(
-              child: Container(
-                height: 1,
-                color: theme.dividerTheme.color ?? AppColors.borderGray,
-              ),
+                child: Container(
+                  height: 1,
+                  color: AppColors.borderGray,
+                ),
             );
           }
           final i = index ~/ 2;

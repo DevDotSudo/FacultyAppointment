@@ -22,7 +22,84 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
   String? _selectedTime;
   bool _isSubmitting = false;
 
-  static const _times = ['8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
+  // Dynamic times based on faculty's set schedule
+  List<String> _availableTimes = [];
+  String? _selectedDayOfWeek;
+
+  String _dayIndexToName(int index) {
+    switch (index) {
+      case DateTime.monday: return 'Monday';
+      case DateTime.tuesday: return 'Tuesday';
+      case DateTime.wednesday: return 'Wednesday';
+      case DateTime.thursday: return 'Thursday';
+      case DateTime.friday: return 'Friday';
+      case DateTime.saturday: return 'Saturday';
+      case DateTime.sunday: return 'Sunday';
+      default: return '';
+    }
+  }
+
+  Future<void> _loadFacultyAvailability(String facultyId) async {
+    setState(() {
+      _availableTimes = [];
+      _selectedTime = null;
+    });
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('faculty_availability')
+          .where('faculty_id', isEqualTo: facultyId)
+          .get();
+
+      // Get the day of week from selected date
+      if (_selectedDate != null) {
+        final parts = _selectedDate!.split('/');
+        if (parts.length == 3) {
+          final month = int.tryParse(parts[0]) ?? 1;
+          final day = int.tryParse(parts[1]) ?? 1;
+          final year = int.tryParse(parts[2]) ?? DateTime.now().year;
+          final date = DateTime(year, month, day);
+          _selectedDayOfWeek = _dayIndexToName(date.weekday);
+        }
+      }
+
+      if (snap.docs.isEmpty) {
+        // No schedule set - show all default times
+        _availableTimes = _defaultTimes;
+      } else {
+        final times = <String>[];
+        for (final doc in snap.docs) {
+          final d = doc.data();
+          final day = d['day'] as String? ?? '';
+          final start = d['start_time'] as String? ?? '';
+          final end = d['end_time'] as String? ?? '';
+
+          // Show all schedules' times if no date selected yet
+          if (_selectedDayOfWeek == null || day.toLowerCase() == _selectedDayOfWeek!.toLowerCase()) {
+            // Generate time slots from start to end
+            final startIdx = _defaultTimes.indexOf(start);
+            final endIdx = _defaultTimes.indexOf(end);
+            if (startIdx >= 0 && endIdx >= 0 && endIdx > startIdx) {
+              for (int i = startIdx; i < endIdx; i++) {
+                if (!times.contains(_defaultTimes[i])) {
+                  times.add(_defaultTimes[i]);
+                }
+              }
+            } else {
+              // Fallback: show start time
+              times.add('$start - $end');
+            }
+          }
+        }
+        _availableTimes = times;
+      }
+    } catch (e) {
+      _availableTimes = _defaultTimes;
+    }
+    setState(() {});
+  }
+
+  static const _defaultTimes = ['8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM'];
+  List<String> get _times => _availableTimes.isNotEmpty ? _availableTimes : _defaultTimes;
 
   @override
   void dispose() {
@@ -99,10 +176,15 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
               return DropdownButtonFormField<String>(
                 initialValue: _selectedFacultyId,
                 items: list.map((f) => DropdownMenuItem<String>(value: f['id'], child: Text(f['name']!))).toList(),
-                onChanged: (v) => setState(() {
-                  _selectedFacultyId = v;
-                  _selectedFacultyName = list.firstWhere((f) => f['id'] == v)['name'];
-                }),
+                onChanged: (v) {
+                  setState(() {
+                    _selectedFacultyId = v;
+                    _selectedFacultyName = list.firstWhere((f) => f['id'] == v)['name'];
+                  });
+                  if (v != null) {
+                    _loadFacultyAvailability(v);
+                  }
+                },
                 decoration: fieldDeco('Choose a faculty member',
                   prefix: const Icon(Icons.person_outline_rounded, size: 18, color: AppColors.textHint)),
                 style: GoogleFonts.inter(fontSize: 14, color: textColor),

@@ -5,6 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/request_tile.dart';
 import '../../../shared/widgets/dialog_helper.dart';
+import '../../domain/usecases/accept_request_usecase.dart';
+import '../../domain/usecases/reject_request_usecase.dart';
 
 class AppointmentRequestsPage extends StatefulWidget {
   const AppointmentRequestsPage({super.key});
@@ -15,6 +17,8 @@ class AppointmentRequestsPage extends StatefulWidget {
 class _AppointmentRequestsPageState extends State<AppointmentRequestsPage> {
   String _tab = 'Pending';
   final _tabs = ['Pending', 'Accepted', 'Rejected', 'Cancelled'];
+  final _acceptUseCase = AcceptRequestUseCase();
+  final _rejectUseCase = RejectRequestUseCase();
 
   @override
   Widget build(BuildContext context) {
@@ -86,23 +90,43 @@ class _AppointmentRequestsPageState extends State<AppointmentRequestsPage> {
                 studentName: d['student_name'] as String? ?? 'Student',
                 dateTime: '${d['date'] ?? ''} · ${d['time'] ?? ''}',
                 purpose: d['purpose'] as String? ?? '',
-                onAccept: _tab == 'Pending' ? () {
-                  doc.reference.update({'status': 'accepted'});
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Request accepted ✓'), backgroundColor: AppColors.success));
+                onAccept: _tab == 'Pending' ? () async {
+                  await _acceptUseCase.call(
+                    requestId: doc.id,
+                    studentId: d['student_id'] as String? ?? '',
+                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Request accepted ✓'), backgroundColor: AppColors.success));
+                  }
                 } : null,
-                onReject: _tab == 'Pending' ? () {
-                  doc.reference.update({'status': 'rejected'});
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Request rejected'), backgroundColor: AppColors.danger));
+                onReject: _tab == 'Pending' ? () async {
+                  await _rejectUseCase.call(
+                    requestId: doc.id,
+                    studentId: d['student_id'] as String? ?? '',
+                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Request rejected'), backgroundColor: AppColors.danger));
+                  }
                 } : null,
                 onView: () => DialogHelper.showViewRequestModal(context,
                   studentName: d['student_name'] as String? ?? 'Student',
                   date: d['date'] as String? ?? '',
                   time: d['time'] as String? ?? '',
                   purpose: d['purpose'] as String? ?? '',
-                  onAccept: () => doc.reference.update({'status': 'accepted'}),
-                  onReject: () => doc.reference.update({'status': 'rejected'}),
+                  onAccept: () async {
+                    await _acceptUseCase.call(
+                      requestId: doc.id,
+                      studentId: d['student_id'] as String? ?? '',
+                    );
+                  },
+                  onReject: () async {
+                    await _rejectUseCase.call(
+                      requestId: doc.id,
+                      studentId: d['student_id'] as String? ?? '',
+                    );
+                  },
                 ),
               );
             }),

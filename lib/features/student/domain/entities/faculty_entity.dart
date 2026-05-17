@@ -20,12 +20,12 @@ class FacultyEntity {
   factory FacultyEntity.fromMap(Map<String, dynamic> map) {
     return FacultyEntity(
       id: map['id'] as String,
-      fullName: map['full_name'] as String,
-      department: map['department'] as String,
-      specialization: map['specialization'] as String,
-      officeLocation: map['office_location'] as String,
-      email: map['email'] as String,
-      phone: map['phone'] as String,
+      fullName: (map['full_name'] as String?) ?? '',
+      department: (map['department'] as String?) ?? '',
+      specialization: (map['specialization'] as String?) ?? '',
+      officeLocation: (map['office_location'] as String?) ?? '',
+      email: (map['email'] as String?) ?? '',
+      phone: (map['phone'] as String?) ?? '',
     );
   }
 }

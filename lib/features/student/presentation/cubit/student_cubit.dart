@@ -1,11 +1,11 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../cubit/student_state.dart';
-import '../../../../features/student/domain/usecases/get_upcoming_appointments_usecase.dart';
-import '../../../../features/student/domain/usecases/get_faculty_list_usecase.dart';
-import '../../../../features/student/domain/entities/upcoming_appointment_data.dart';
-import '../../../../features/student/domain/entities/faculty_data.dart';
+import 'student_state.dart';
+import 'package:faculty_appointment/features/student/domain/usecases/get_upcoming_appointments_usecase.dart';
+import 'package:faculty_appointment/features/student/domain/usecases/get_faculty_list_usecase.dart';
+import 'package:faculty_appointment/features/student/domain/entities/upcoming_appointment_data.dart';
+import 'package:faculty_appointment/features/student/domain/entities/faculty_data.dart';
 
 class StudentCubit extends Cubit<StudentState> {
   final GetUpcomingAppointmentsUseCase _getUpcomingAppointments;

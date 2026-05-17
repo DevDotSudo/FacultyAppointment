@@ -1,9 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../cubit/faculty_state.dart';
-import '../../../../features/faculty/domain/usecases/get_pending_requests_usecase.dart';
-import '../../../../features/faculty/domain/usecases/get_appointment_requests_usecase.dart';
-import '../../../../features/faculty/domain/entities/pending_request_data.dart';
+import 'faculty_state.dart';
+import 'package:faculty_appointment/features/faculty/domain/usecases/get_pending_requests_usecase.dart';
+import 'package:faculty_appointment/features/faculty/domain/usecases/get_appointment_requests_usecase.dart';
+import 'package:faculty_appointment/features/faculty/domain/entities/pending_request_data.dart';
 
 class FacultyCubit extends Cubit<FacultyState> {
   final GetPendingRequestsUseCase _getPendingRequests;

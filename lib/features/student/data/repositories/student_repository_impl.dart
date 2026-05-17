@@ -32,4 +32,14 @@ class StudentRepositoryImpl implements StudentRepository {
     if (data != null) return FacultyEntity.fromMap(data);
     return null;
   }
+
+  @override
+  Future<void> bookAppointment(Map<String, dynamic> data) async {
+    await _remoteDatasource.bookAppointment(data);
+  }
+
+  @override
+  Future<void> cancelAppointment(String requestId) async {
+    await _remoteDatasource.cancelAppointment(requestId);
+  }
 }

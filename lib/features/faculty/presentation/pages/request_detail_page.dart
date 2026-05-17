@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/dialog_helper.dart';
+import '../../domain/usecases/accept_request_usecase.dart';
+import '../../domain/usecases/reject_request_usecase.dart';
 
 class RequestDetailPage extends StatefulWidget {
   const RequestDetailPage({super.key});
@@ -13,6 +15,9 @@ class RequestDetailPage extends StatefulWidget {
 }
 
 class _RequestDetailPageState extends State<RequestDetailPage> {
+  final _acceptUseCase = AcceptRequestUseCase();
+  final _rejectUseCase = RejectRequestUseCase();
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -88,7 +93,10 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                             date: d['date'] as String? ?? '',
                             time: d['time'] as String? ?? '',
                             onConfirm: () async {
-                              await doc.reference.update({'status': 'accepted'});
+                              await _acceptUseCase.call(
+                                requestId: doc.id,
+                                studentId: d['student_id'] as String? ?? '',
+                              );
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Request accepted'), backgroundColor: AppColors.statusAccepted),
@@ -109,7 +117,10 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                             context,
                             studentName: d['student_name'] as String? ?? 'Student',
                             onConfirm: () async {
-                              await doc.reference.update({'status': 'rejected'});
+                              await _rejectUseCase.call(
+                                requestId: doc.id,
+                                studentId: d['student_id'] as String? ?? '',
+                              );
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Request rejected'), backgroundColor: AppColors.statusRejected),

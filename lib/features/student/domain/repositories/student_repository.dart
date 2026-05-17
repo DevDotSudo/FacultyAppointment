@@ -6,4 +6,6 @@ abstract class StudentRepository {
   Future<List<AppointmentEntity>> getUpcomingAppointments(String studentId);
   Future<List<FacultyEntity>> getFacultyList();
   Future<FacultyEntity?> getFacultyById(String facultyId);
+  Future<void> bookAppointment(Map<String, dynamic> data);
+  Future<void> cancelAppointment(String requestId);
 }
