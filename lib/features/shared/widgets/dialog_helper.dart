@@ -344,9 +344,46 @@ class DialogHelper {
                 contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12)),
             ),
             const SizedBox(height: 12),
+            // Day selector - date picker style grid
+            Text('Day of the Week', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppColors.fieldFill,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: days.map((day) {
+                  final isSelected = selectedDay == day;
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () => setDialogState(() => selectedDay = day),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppColors.primary : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          day.substring(0, 3), // Mon, Tue, Wed...
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            color: isSelected ? Colors.white : AppColors.textDark,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 14),
             Row(children: [
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Start Time', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                Text('Start Time', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
                 const SizedBox(height: 4),
                 InkWell(
                   onTap: () async {
@@ -360,22 +397,22 @@ class DialogHelper {
                     }
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
                     decoration: BoxDecoration(
                       border: Border.all(color: AppColors.borderGray),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       color: AppColors.fieldFill,
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.access_time_rounded, size: 16, color: AppColors.primary),
-                        const SizedBox(width: 8),
+                        Icon(Icons.access_time_rounded, size: 20, color: AppColors.primary),
+                        const SizedBox(width: 10),
                         Text(
                           _formatTime(selectedStart),
-                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark),
+                          style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textDark),
                         ),
                         const Spacer(),
-                        Icon(Icons.edit_calendar_rounded, size: 16, color: AppColors.textHint),
+                        Icon(Icons.edit_calendar_rounded, size: 20, color: AppColors.textHint),
                       ],
                     ),
                   ),
@@ -383,7 +420,7 @@ class DialogHelper {
               ])),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('End Time', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                Text('End Time', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
                 const SizedBox(height: 4),
                 InkWell(
                   onTap: () async {
@@ -397,22 +434,22 @@ class DialogHelper {
                     }
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
                     decoration: BoxDecoration(
                       border: Border.all(color: AppColors.borderGray),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       color: AppColors.fieldFill,
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.access_time_rounded, size: 16, color: AppColors.primary),
-                        const SizedBox(width: 8),
+                        Icon(Icons.access_time_rounded, size: 20, color: AppColors.primary),
+                        const SizedBox(width: 10),
                         Text(
                           _formatTime(selectedEnd),
-                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark),
+                          style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textDark),
                         ),
                         const Spacer(),
-                        Icon(Icons.edit_calendar_rounded, size: 16, color: AppColors.textHint),
+                        Icon(Icons.edit_calendar_rounded, size: 20, color: AppColors.textHint),
                       ],
                     ),
                   ),
