@@ -1,62 +1,64 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/responsive.dart';
 
 class StatCardWidget extends StatelessWidget {
   final String label;
   final String number;
+  final Color accentColor;
+  final IconData icon;
   final VoidCallback? onViewAll;
-  final Color? accentColor;
-  final IconData? icon;
 
   const StatCardWidget({
     super.key,
     required this.label,
     required this.number,
+    required this.accentColor,
+    required this.icon,
     this.onViewAll,
-    this.accentColor,
-    this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accent = accentColor ?? AppColors.primary;
-    final bg = isDark ? AppColors.darkCard : Colors.white;
-    final border = isDark ? AppColors.darkBorder : const Color(0xFFEEEFF2);
-
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: Responsive.cardPadding(screenWidth),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: border),
-        boxShadow: isDark ? null : [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
-        ],
+        color: isDark ? AppColors.darkCardBg : Colors.white,
+        borderRadius: BorderRadius.circular(Responsive.cardRadius(screenWidth)),
+        border: Border.all(color: borderColor, width: 0.5),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: accent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
-              child: Icon(icon ?? Icons.bar_chart_rounded, size: 16, color: accent),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
             ),
-            const Spacer(),
-            if (onViewAll != null)
-              GestureDetector(
-                onTap: onViewAll,
-                child: Text('View →', style: GoogleFonts.inter(fontSize: 11, color: accent, fontWeight: FontWeight.w600)),
-              ),
-          ]),
-          const SizedBox(height: 12),
-          Text(number, style: GoogleFonts.inter(fontSize: 26, fontWeight: FontWeight.bold,
-            color: isDark ? AppColors.darkText : AppColors.textDark)),
-          const SizedBox(height: 2),
-          Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500,
-            color: isDark ? AppColors.darkMuted : AppColors.textMuted)),
+            child: Icon(icon, size: 22, color: accentColor),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                  style: GoogleFonts.inter(
+                    fontSize: Responsive.label(screenWidth).fontSize,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary)),
+                const SizedBox(height: 2),
+                Text(number,
+                  style: GoogleFonts.inter(
+                    fontSize: Responsive.display1(screenWidth).fontSize! - 4,
+                    fontWeight: FontWeight.w700,
+                    color: accentColor)),
+              ],
+            ),
+          ),
         ],
       ),
     );

@@ -28,6 +28,12 @@ class AuthTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final hintColor = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final fillColor = isDark ? AppColors.darkInputBg : AppColors.lightInputBg;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -36,7 +42,7 @@ class AuthTextField extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: AppColors.textDark,
+            color: textColor,
             letterSpacing: 0.3,
           ),
         ),
@@ -47,22 +53,22 @@ class AuthTextField extends StatelessWidget {
           obscureText: obscureText,
           maxLines: maxLines,
           validator: validator,
-          style: GoogleFonts.inter(fontSize: 14, color: AppColors.textDark),
+          style: GoogleFonts.inter(fontSize: 14, color: textColor),
           decoration: InputDecoration(
             hintText: hintText,
-            hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.textHint),
+            hintStyle: GoogleFonts.inter(fontSize: 13, color: hintColor),
             suffixIcon: suffixIcon,
             prefixIcon: prefixIcon,
             filled: true,
-            fillColor: const Color(0xFFF8F9FB),
+            fillColor: fillColor,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFE2E5EA)),
+              borderSide: BorderSide(color: borderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFE2E5EA)),
+              borderSide: BorderSide(color: borderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),

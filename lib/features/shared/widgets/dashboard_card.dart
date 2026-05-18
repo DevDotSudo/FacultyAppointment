@@ -1,59 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/responsive.dart';
 
 class DashboardCard extends StatelessWidget {
   final String title;
+  final IconData? titleIcon;
   final Widget child;
   final Widget? trailing;
-  final IconData? titleIcon;
 
   const DashboardCard({
     super.key,
     required this.title,
+    this.titleIcon,
     required this.child,
     this.trailing,
-    this.titleIcon,
   });
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColors.darkCard : Colors.white;
-    final border = isDark ? AppColors.darkBorder : const Color(0xFFEEEFF2);
-
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     return Container(
+      padding: Responsive.cardPadding(screenWidth),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: border),
-        boxShadow: isDark ? null : [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
-        ],
+        color: isDark ? AppColors.darkCardBg : Colors.white,
+        borderRadius: BorderRadius.circular(Responsive.cardRadius(screenWidth)),
+        border: Border.all(color: borderColor, width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 12, 0),
-            child: Row(children: [
+          Row(
+            children: [
               if (titleIcon != null) ...[
-                Icon(titleIcon, size: 16, color: AppColors.primary),
-                const SizedBox(width: 6),
+                Icon(titleIcon, size: 18, color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                const SizedBox(width: 8),
               ],
-              Expanded(
-                child: Text(title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.darkText : AppColors.textDark)),
-              ),
-              ?trailing,
-            ]),
+              Text(title,
+                style: GoogleFonts.inter(
+                  fontSize: Responsive.h4(screenWidth).fontSize,
+                  fontWeight: FontWeight.w600,
+                  color: textColor)),
+              const Spacer(),
+              if (trailing != null) trailing!,
+            ],
           ),
-          const SizedBox(height: 2),
-          Divider(color: isDark ? AppColors.darkBorder : const Color(0xFFF0F1F3), height: 16),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: child,
-          ),
+          SizedBox(height: Responsive.s16),
+          child,
         ],
       ),
     );

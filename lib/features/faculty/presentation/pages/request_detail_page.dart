@@ -21,11 +21,10 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? AppColors.darkCard : AppColors.cardLight;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.borderGray;
-    final textColor = isDark ? AppColors.darkText : AppColors.textDark;
-    final mutedColor = isDark ? AppColors.darkMuted : AppColors.textMuted;
-    final secondaryColor = isDark ? AppColors.darkMuted : AppColors.textSecondary;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final mutedColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final cardColor = isDark ? AppColors.darkCardBg : Colors.white;
 
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
@@ -51,109 +50,101 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
           final doc = snap.data!.docs.first;
           final d = doc.data() as Map<String, dynamic>;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Request Details',
-                  style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Request Details',
+                style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  border: Border.all(color: borderColor),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: cardColor,
-                    border: Border.all(color: borderColor),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _detailRow('Student', d['student_name'] as String? ?? 'N/A', mutedColor, secondaryColor),
-                      const SizedBox(height: 10),
-                      _detailRow('Date & Time', '${d['date'] ?? ''} · ${d['time'] ?? ''}', mutedColor, secondaryColor),
-                      const SizedBox(height: 10),
-                      _detailRow('Purpose', d['purpose'] as String? ?? 'N/A', mutedColor, secondaryColor),
-                      const SizedBox(height: 10),
-                      _detailRow('Status', d['status'] as String? ?? 'pending', mutedColor, AppColors.warning),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          DialogHelper.showAcceptRequestModal(
-                            context,
-                            studentName: d['student_name'] as String? ?? 'Student',
-                            date: d['date'] as String? ?? '',
-                            time: d['time'] as String? ?? '',
-                            onConfirm: () async {
-                              await _acceptUseCase.call(
-                                requestId: doc.id,
-                                studentId: d['student_id'] as String? ?? '',
-                              );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Request accepted'), backgroundColor: AppColors.statusAccepted),
-                                );
-                              }
-                            },
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusAccepted),
-                        child: const Text('Accept'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          DialogHelper.showRejectRequestModal(
-                            context,
-                            studentName: d['student_name'] as String? ?? 'Student',
-                            onConfirm: () async {
-                              await _rejectUseCase.call(
-                                requestId: doc.id,
-                                studentId: d['student_id'] as String? ?? '',
-                              );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Request rejected'), backgroundColor: AppColors.statusRejected),
-                                );
-                              }
-                            },
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusRejected),
-                        child: const Text('Reject'),
-                      ),
-                    ),
+                    _detailRow('Student', d['student_name'] as String? ?? 'N/A', mutedColor),
+                    const SizedBox(height: 10),
+                    _detailRow('Date & Time', '${d['date'] ?? ''} · ${d['time'] ?? ''}', mutedColor),
+                    const SizedBox(height: 10),
+                    _detailRow('Purpose', d['purpose'] as String? ?? 'N/A', mutedColor),
+                    const SizedBox(height: 10),
+                    _detailRow('Status', d['status'] as String? ?? 'pending', mutedColor),
                   ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        DialogHelper.showAcceptRequestModal(
+                          context,
+                          studentName: d['student_name'] as String? ?? 'Student',
+                          date: d['date'] as String? ?? '',
+                          time: d['time'] as String? ?? '',
+                          onConfirm: () async {
+                            await _acceptUseCase.call(
+                              requestId: doc.id,
+                              studentId: d['student_id'] as String? ?? '',
+                            );
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Request accepted'), backgroundColor: AppColors.statusAccepted),
+                              );
+                            }
+                          },
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusAccepted),
+                      child: const Text('Accept'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        DialogHelper.showRejectRequestModal(
+                          context,
+                          studentName: d['student_name'] as String? ?? 'Student',
+                          onConfirm: () async {
+                            await _rejectUseCase.call(
+                              requestId: doc.id,
+                              studentId: d['student_id'] as String? ?? '',
+                            );
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Request rejected'), backgroundColor: AppColors.statusRejected),
+                              );
+                            }
+                          },
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusRejected),
+                      child: const Text('Reject'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           );
         },
       );
   }
 
-  Widget _detailRow(String label, String value, Color mutedColor, Color valueColor) {
+  Widget _detailRow(String label, String value, Color mutedColor) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: mutedColor)),
+        Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: mutedColor)),
         const Spacer(),
         SizedBox(
           width: 200,
-          child: Text(value,
-              style: GoogleFonts.inter(fontSize: 14, color: valueColor),
-              textAlign: TextAlign.right),
+          child: Text(value, style: GoogleFonts.inter(fontSize: 14, color: mutedColor), textAlign: TextAlign.right),
         ),
       ],
     );

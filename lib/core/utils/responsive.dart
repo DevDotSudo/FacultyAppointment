@@ -1,102 +1,229 @@
 import 'package:flutter/material.dart';
 
+/// Complete responsive layout system for Faculty Appointment app.
+/// All breakpoint decisions use MediaQuery.of(context).size.width.
 class Responsive {
-  // ── Breakpoints ──────────────────────────────────────────────────────────
+  const Responsive._();
+
+  // ══════════════════════════════════════════════
+  // BREAKPOINTS
+  // ══════════════════════════════════════════════
   static const double mobileS = 320;
   static const double mobileM = 375;
-  static const double mobileL = 425;
-  static const double tablet = 768;
-  static const double laptop = 1024;
-  static const double desktop = 1440;
+  static const double mobileL = 425; // 425–767
+  static const double tablet = 768;  // 768–1023
+  static const double desktopS = 1024; // 1024–1439
+  static const double desktopL = 1440; // 1440+
 
-  // ── Device category checks ───────────────────────────────────────────────
+  // ── Device detection ──
+  static bool isMobileS(double w) => w < mobileM;
+  static bool isMobileM(double w) => w >= mobileM && w < mobileL;
+  static bool isMobileL(double w) => w >= mobileL && w < tablet;
+  static bool isMobile(double w) => w < tablet;
+  static bool isTablet(double w) => w >= tablet && w < desktopS;
+  static bool isDesktopS(double w) => w >= desktopS && w < desktopL;
+  static bool isDesktopL(double w) => w >= desktopL;
+  static bool isDesktop(double w) => w >= desktopS;
 
-  static bool isMobileS(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    return w < mobileM;
+  // Convenience
+  static double widthOf(BuildContext context) => MediaQuery.of(context).size.width;
+
+  // ══════════════════════════════════════════════
+  // NAVIGATION PATTERN
+  // ══════════════════════════════════════════════
+  static bool showBottomNav(double w) => w < tablet;              // Mobile: BottomNavigationBar
+  static bool showDrawer(double w) => w >= tablet && w < desktopS; // Tablet: Drawer
+  static bool showSidebar(double w) => w >= desktopS;              // Desktop: permanent sidebar
+
+  static double sidebarWidth(double w) {
+    if (w >= desktopL) return 280;
+    if (w >= desktopS) return 260;
+    if (w >= tablet) return 240;
+    return 0;
   }
 
-  static bool isMobileM(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    return w >= mobileM && w < mobileL;
+  // ══════════════════════════════════════════════
+  // SPACING TOKENS
+  // ══════════════════════════════════════════════
+  static EdgeInsets outerPadding(double w) {
+    if (w < mobileM) return const EdgeInsets.all(12);
+    if (w < mobileL) return const EdgeInsets.all(20);
+    if (w < tablet) return const EdgeInsets.all(24);
+    if (w < desktopS) return const EdgeInsets.all(32);
+    return const EdgeInsets.all(48);
   }
 
-  static bool isMobileL(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    return w >= mobileL && w < tablet;
+  static double gutter(double w) {
+    if (w < mobileM) return 12;
+    if (w < mobileL) return 16;
+    if (w < tablet) return 20;
+    if (w < desktopS) return 24;
+    return 28;
   }
 
-  static bool isMobile(BuildContext context) =>
-      MediaQuery.of(context).size.width < tablet;
-
-  static bool isTablet(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    return w >= tablet && w < laptop;
+  static double sectionGap(double w) {
+    if (w < mobileM) return 24;
+    if (w < mobileL) return 32;
+    if (w < tablet) return 40;
+    if (w < desktopS) return 48;
+    return 56;
   }
 
-  static bool isDesktopS(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    return w >= laptop && w < desktop;
+  static EdgeInsets cardPadding(double w) {
+    if (w < mobileM) return const EdgeInsets.all(12);
+    if (w < mobileL) return const EdgeInsets.all(16);
+    if (w < tablet) return const EdgeInsets.all(20);
+    if (w < desktopS) return const EdgeInsets.all(24);
+    return const EdgeInsets.all(28);
   }
 
-  static bool isDesktop(BuildContext context) =>
-      MediaQuery.of(context).size.width >= laptop;
-
-  static bool isDesktopL(BuildContext context) =>
-      MediaQuery.of(context).size.width >= desktop;
-
-  // ── Sidebar / layout mode ────────────────────────────────────────────────
-
-  /// Mobile & tablet → sidebar as drawer
-  static bool showSidebarDrawer(BuildContext context) =>
-      MediaQuery.of(context).size.width < laptop;
-
-  /// Desktop S & L → persistent sidebar visible
-  static bool showSidebar(BuildContext context) =>
-      MediaQuery.of(context).size.width >= laptop;
-
-  // ── Sidebar widths ───────────────────────────────────────────────────────
-
-  static double sidebarWidth(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    if (w >= desktop) return 280;       // Desktop L
-    if (w >= laptop) return 260;        // Desktop S
-    return 240;                          // Tablet drawer
+  static double headerHeight(double w) {
+    if (w < mobileM) return 48;
+    if (w < mobileL) return 52;
+    if (w < tablet) return 56;
+    if (w < desktopS) return 60;
+    return 64;
   }
 
-  // ── Content width constraints ────────────────────────────────────────────
+  // ══════════════════════════════════════════════
+  // TYPOGRAPHY SCALE
+  // Minimum font size is 11px anywhere.
+  // ══════════════════════════════════════════════
+  static TextStyle display1(double w) => TextStyle(
+    fontSize: w < mobileL ? 24 : w < tablet ? 28 : w < desktopS ? 32 : w < desktopL ? 36 : 40,
+    fontWeight: FontWeight.w700,
+  );
 
-  /// Max content width: 1440 for desktop L, else unconstrained
-  static double maxContentWidth(BuildContext context) =>
-      MediaQuery.of(context).size.width >= desktop ? 1440 : double.infinity;
+  static TextStyle h2(double w) => TextStyle(
+    fontSize: w < mobileL ? 20 : w < tablet ? 22 : w < desktopS ? 24 : w < desktopL ? 26 : 28,
+    fontWeight: FontWeight.w600,
+  );
 
-  // ── Two-column layout threshold inside content area ──────────────────────
+  static TextStyle h3(double w) => TextStyle(
+    fontSize: w < mobileL ? 17 : w < tablet ? 18 : w < desktopS ? 19 : w < desktopL ? 20 : 22,
+    fontWeight: FontWeight.w600,
+  );
 
+  static TextStyle h4(double w) => TextStyle(
+    fontSize: w < mobileL ? 15 : w < tablet ? 16 : w < desktopS ? 16 : w < desktopL ? 17 : 18,
+    fontWeight: FontWeight.w600,
+  );
+
+  static TextStyle body(double w) {
+    final double fontSize;
+    final double height;
+    if (w < mobileM) { fontSize = 14; height = 1.6; }
+    else if (w < mobileL) { fontSize = 15; height = 1.65; }
+    else if (w < tablet) { fontSize = 15; height = 1.7; }
+    else { fontSize = 16; height = 1.7; }
+    return TextStyle(fontSize: fontSize, fontWeight: FontWeight.w400, height: height);
+  }
+
+  static TextStyle small(double w) {
+    if (w < mobileM) return const TextStyle(fontSize: 12);
+    if (w < mobileL) return const TextStyle(fontSize: 13);
+    if (w < desktopS) return const TextStyle(fontSize: 13);
+    return const TextStyle(fontSize: 14);
+  }
+
+  static TextStyle label(double w) {
+    if (w < desktopS) return const TextStyle(fontSize: 11, fontWeight: FontWeight.w500);
+    return const TextStyle(fontSize: 12, fontWeight: FontWeight.w500);
+  }
+
+  static TextStyle button(double w) {
+    if (w < mobileL) return const TextStyle(fontSize: 14, fontWeight: FontWeight.w500);
+    if (w < tablet) return const TextStyle(fontSize: 15, fontWeight: FontWeight.w500);
+    if (w < desktopS) return const TextStyle(fontSize: 15, fontWeight: FontWeight.w500);
+    return const TextStyle(fontSize: 14, fontWeight: FontWeight.w500);
+  }
+
+  static TextStyle navItem(double w) {
+    if (w < tablet) return const TextStyle(fontSize: 13, fontWeight: FontWeight.w500);
+    return const TextStyle(fontSize: 14, fontWeight: FontWeight.w500);
+  }
+
+  static TextStyle code(double w) {
+    if (w < mobileL) return const TextStyle(fontSize: 12);
+    if (w < tablet) return const TextStyle(fontSize: 13);
+    if (w < desktopL) return const TextStyle(fontSize: 14);
+    return const TextStyle(fontSize: 14);
+  }
+
+  // ══════════════════════════════════════════════
+  // COMPONENT SIZES
+  // ══════════════════════════════════════════════
+  static double inputHeight(double w) {
+    if (w < desktopS) return 44;
+    return 40;
+  }
+
+  static double buttonHeight(double w) {
+    if (w < desktopS) return 44;
+    return 40;
+  }
+
+  static double touchTarget(double w) {
+    if (w < desktopS) return 44;
+    return 36;
+  }
+
+  static double cardRadius(double w) {
+    if (w < mobileL) return 10;
+    if (w < tablet) return 12;
+    if (w < desktopS) return 12;
+    return 14;
+  }
+
+  static double inputRadius(double w) => 8;
+
+  // ══════════════════════════════════════════════
+  // LAYOUT
+  // ══════════════════════════════════════════════
+  /// Desktop L content must be centered with max-width: 1440
+  static Widget maxWidthContainer(double screenWidth, Widget child) {
+    if (screenWidth >= desktopL) {
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: desktopL),
+          child: child,
+        ),
+      );
+    }
+    return child;
+  }
+
+  /// Stat cards: Mobile S/M = 2×2 grid; Mobile L+ = 4-column row
+  static bool statCardsTwoCol(double w) => w < mobileL;
+
+  /// Two-column layout unlocks when content area ≥ 600px
   static bool isTwoCol(double contentWidth) => contentWidth >= 600;
 
-  // ── Stat card grid: 2-col vs 4-col ───────────────────────────────────────
+  /// Max readable text column width: 72–80 characters (~600px)
+  static double maxTextWidth(double w) => w >= desktopS ? 600 : double.infinity;
 
-  /// Stat cards should use 2×2 grid when content width < 600
-  static bool statCardsTwoCol(double contentWidth) => contentWidth < 600;
+  // ══════════════════════════════════════════════
+  // Shared spacing scale utilities
+  // ══════════════════════════════════════════════
+  static const double s4 = 4;
+  static const double s8 = 8;
+  static const double s12 = 12;
+  static const double s16 = 16;
+  static const double s20 = 20;
+  static const double s24 = 24;
+  static const double s32 = 32;
+  static const double s40 = 40;
+  static const double s48 = 48;
+  static const double s56 = 56;
 
-  // ── Responsive padding ───────────────────────────────────────────────────
-
-  static EdgeInsets pagePadding(BuildContext context) {
-    final w = MediaQuery.of(context).size.width;
-    if (w < mobileM) return const EdgeInsets.all(12);        // Mobile S: 12px
-    if (w < mobileL) return const EdgeInsets.all(20);        // Mobile L: 20px
-    if (w < tablet) return const EdgeInsets.all(20);         // Mobile L upper: 20px
-    if (w < laptop) return const EdgeInsets.all(24);         // Tablet: 24px
-    if (w < desktop) return const EdgeInsets.all(32);        // Desktop S: 32px
-    return const EdgeInsets.all(48);                         // Desktop L: 48px
-  }
-
-  // ── Font scale helper ────────────────────────────────────────────────────
-
-  static double fontSize(BuildContext context, double base) {
-    final w = MediaQuery.of(context).size.width;
-    if (w < mobileL) return base - 2;
-    if (w < tablet) return base - 1;
-    return base;
-  }
+  // ══════════════════════════════════════════════
+  // BACKWARD-COMPATIBLE HELPERS
+  // ══════════════════════════════════════════════
+  static EdgeInsets pagePadding(BuildContext context) => outerPadding(widthOf(context));
+  static bool isMobileContext(BuildContext context) => isMobile(widthOf(context));
+  static bool isDesktopContext(BuildContext context) => isDesktop(widthOf(context));
+  static bool showSidebarFromWidth(double w) => w >= desktopS;
+  static double maxContentWidth(double w) => w >= desktopL ? desktopL : double.infinity;
+  static double maxContentWidthCtx(BuildContext context) => maxContentWidth(widthOf(context));
+  static bool isTwoColCtx(double contentWidth) => contentWidth >= 600;
 }

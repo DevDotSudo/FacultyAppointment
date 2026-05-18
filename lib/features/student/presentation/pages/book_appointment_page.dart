@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/responsive.dart';
 import '../../../shared/widgets/dialog_helper.dart';
 import '../../domain/usecases/book_appointment_usecase.dart';
 
@@ -122,13 +123,14 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? AppColors.darkText : AppColors.textDark;
-    final mutedColor = isDark ? AppColors.darkMuted : AppColors.textMuted;
-    final cardBg = isDark ? AppColors.darkCard : Colors.white;
-    final border = isDark ? AppColors.darkBorder : const Color(0xFFEEEFF2);
-    final fieldFill = isDark ? AppColors.darkBg : const Color(0xFFF8F9FB);
+    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final mutedColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final cardBg = isDark ? AppColors.darkCardBg : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final fieldFill = isDark ? AppColors.darkInputBg : AppColors.lightInputBg;
 
     InputDecoration fieldDeco(String hint, {Widget? suffix, Widget? prefix}) => InputDecoration(
       hintText: hint,
@@ -137,8 +139,8 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
       prefixIcon: prefix,
       filled: true, fillColor: fieldFill,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border)),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor)),
       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
     );
 
@@ -146,27 +148,35 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
       Row(children: [
         InkWell(onTap: () => context.pop(), borderRadius: BorderRadius.circular(8),
           child: Container(padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: isDark ? AppColors.darkCard : Colors.white,
-              borderRadius: BorderRadius.circular(8), border: Border.all(color: border)),
+            decoration: BoxDecoration(color: cardBg,
+              borderRadius: BorderRadius.circular(8), border: Border.all(color: borderColor)),
             child: Icon(Icons.arrow_back_rounded, size: 18, color: textColor))),
         const SizedBox(width: 12),
-        Text('Book Appointment', style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.bold, color: textColor)),
+        Text('Book Appointment', style: GoogleFonts.inter(
+          fontSize: Responsive.h2(screenWidth).fontSize,
+          fontWeight: FontWeight.bold,
+          color: textColor)),
       ]),
       const SizedBox(height: 4),
       Padding(
         padding: const EdgeInsets.only(left: 44),
-        child: Text('Fill in the details to request an appointment', style: GoogleFonts.inter(fontSize: 13, color: mutedColor)),
+        child: Text('Fill in the details to request an appointment',
+          style: GoogleFonts.inter(
+            fontSize: Responsive.body(screenWidth).fontSize,
+            color: mutedColor)),
       ),
-      const SizedBox(height: 24),
+      SizedBox(height: Responsive.s24),
 
       Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: border),
+        padding: Responsive.cardPadding(screenWidth),
+        decoration: BoxDecoration(color: cardBg,
+          borderRadius: BorderRadius.circular(Responsive.cardRadius(screenWidth)),
+          border: Border.all(color: borderColor, width: 0.5),
           boxShadow: isDark ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           // Faculty
           _label('Select Faculty', textColor),
-          const SizedBox(height: 6),
+          SizedBox(height: Responsive.s8),
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance.collection('faculty').snapshots(),
             builder: (context, snap) {
@@ -186,23 +196,23 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                   }
                 },
                 decoration: fieldDeco('Choose a faculty member',
-                  prefix: const Icon(Icons.person_outline_rounded, size: 18, color: AppColors.textHint)),
+                  prefix: Icon(Icons.person_outline_rounded, size: 18, color: mutedColor)),
                 style: GoogleFonts.inter(fontSize: 14, color: textColor),
               );
             },
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: Responsive.s16),
 
           // Date & Time
           Row(children: [
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _label('Date', textColor),
-              const SizedBox(height: 6),
+              SizedBox(height: Responsive.s8),
               GestureDetector(
                 onTap: _pickDate,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                  decoration: BoxDecoration(color: fieldFill, borderRadius: BorderRadius.circular(10), border: Border.all(color: border)),
+                  decoration: BoxDecoration(color: fieldFill, borderRadius: BorderRadius.circular(10), border: Border.all(color: borderColor)),
                   child: Row(children: [
                     Icon(Icons.calendar_today_rounded, size: 16, color: mutedColor),
                     const SizedBox(width: 8),
@@ -212,36 +222,36 @@ class _BookAppointmentPageState extends State<BookAppointmentPage> {
                 ),
               ),
             ])),
-            const SizedBox(width: 12),
+            SizedBox(width: Responsive.s12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _label('Time', textColor),
-              const SizedBox(height: 6),
+              SizedBox(height: Responsive.s8),
               DropdownButtonFormField<String>(
                 initialValue: _selectedTime,
                 items: _times.map((t) => DropdownMenuItem<String>(value: t, child: Text(t))).toList(),
                 onChanged: (v) => setState(() => _selectedTime = v),
                 decoration: fieldDeco('Select time',
-                  prefix: const Icon(Icons.access_time_rounded, size: 18, color: AppColors.textHint)),
+                  prefix: Icon(Icons.access_time_rounded, size: 18, color: mutedColor)),
                 style: GoogleFonts.inter(fontSize: 14, color: textColor),
               ),
             ])),
           ]),
-          const SizedBox(height: 16),
+          SizedBox(height: Responsive.s16),
 
           // Purpose
           _label('Purpose', textColor),
-          const SizedBox(height: 6),
+          SizedBox(height: Responsive.s8),
           TextFormField(
             controller: _purposeCtrl,
             maxLines: 4,
             style: GoogleFonts.inter(fontSize: 14, color: textColor),
             decoration: fieldDeco('Describe the purpose of your appointment...'),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: Responsive.s24),
 
           SizedBox(
             width: double.infinity,
-            height: 48,
+            height: Responsive.buttonHeight(screenWidth),
             child: ElevatedButton.icon(
               onPressed: _isSubmitting ? null : () {
                 if (_selectedFacultyId == null || _selectedDate == null || _selectedTime == null || _purposeCtrl.text.trim().isEmpty) {

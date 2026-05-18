@@ -6,14 +6,15 @@ import '../../../core/theme/app_colors.dart';
 import '../../../features/student/domain/usecases/book_appointment_usecase.dart';
 
 /// Full dialog-based appointment booking system
-/// Students can select faculty, date, and see only available times
 class BookAppointmentDialog {
   static Future<void> show(BuildContext context) async {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? AppColors.darkCard : Colors.white;
-    final textColor = isDark ? AppColors.darkText : AppColors.textDark;
-    final mutedColor = isDark ? AppColors.darkMuted : AppColors.textMuted;
+    final bgColor = isDark ? AppColors.darkCardBg : Colors.white;
+    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final mutedColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final fillColor = isDark ? AppColors.darkInputBg : AppColors.lightInputBg;
 
     String? selectedFacultyId;
     String? selectedFacultyName;
@@ -38,7 +39,6 @@ class BookAppointmentDialog {
             .get();
 
         if (snap.docs.isEmpty) {
-          // No schedule set - show a message
           return;
         }
 
@@ -49,9 +49,7 @@ class BookAppointmentDialog {
           final end = d['end_time'] as String? ?? '';
 
           if (day.toLowerCase() == dayName.toLowerCase()) {
-            // Parse start and end times to generate slots
-            final parsed =
-                _parseTimeRange(start, end);
+            final parsed = _parseTimeRange(start, end);
             if (parsed != null) {
               availableTimes.addAll(parsed);
             }
@@ -105,7 +103,7 @@ class BookAppointmentDialog {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkMuted : AppColors.borderGray,
+                      color: mutedColor,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -134,10 +132,10 @@ class BookAppointmentDialog {
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: isDark ? AppColors.darkBg : AppColors.fieldFill,
+                              color: fillColor,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Icon(Icons.close_rounded, size: 22, color: AppColors.textMuted),
+                            child: Icon(Icons.close_rounded, size: 22, color: mutedColor),
                           ),
                         ),
                       ],
@@ -152,7 +150,7 @@ class BookAppointmentDialog {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Step 1: Select Faculty
-                          _stepLabel('1', 'Select Faculty', isDark),
+                          _stepLabel('1', 'Select Faculty', textColor),
                           const SizedBox(height: 8),
                           StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance.collection('faculty').snapshots(),
@@ -166,7 +164,7 @@ class BookAppointmentDialog {
                                   : <Map<String, String>>[];
                               return Container(
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.borderGray),
+                                  border: Border.all(color: borderColor),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Column(
@@ -179,10 +177,7 @@ class BookAppointmentDialog {
                                         decoration: BoxDecoration(
                                           color: isSelected ? AppColors.primary.withValues(alpha: 0.08) : null,
                                           border: Border(
-                                            bottom: BorderSide(
-                                              color: isDark ? AppColors.darkBorder : AppColors.borderGray,
-                                              width: 0.5,
-                                            ),
+                                            bottom: BorderSide(color: borderColor, width: 0.5),
                                           ),
                                         ),
                                         child: Row(
@@ -205,15 +200,11 @@ class BookAppointmentDialog {
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  Text(
-                                                    f['name'] ?? '',
-                                                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: textColor),
-                                                  ),
+                                                  Text(f['name'] ?? '',
+                                                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: textColor)),
                                                   if ((f['dept'] ?? '').isNotEmpty)
-                                                    Text(
-                                                      f['dept'] ?? '',
-                                                      style: GoogleFonts.inter(fontSize: 12, color: mutedColor),
-                                                    ),
+                                                    Text(f['dept'] ?? '',
+                                                      style: GoogleFonts.inter(fontSize: 12, color: mutedColor)),
                                                 ],
                                               ),
                                             ),
@@ -239,7 +230,7 @@ class BookAppointmentDialog {
 
                           // Step 2: Select Date
                           if (selectedFacultyId != null) ...[
-                            _stepLabel('2', 'Select Date', isDark),
+                            _stepLabel('2', 'Select Date', textColor),
                             const SizedBox(height: 8),
                             InkWell(
                               onTap: () async {
@@ -267,7 +258,7 @@ class BookAppointmentDialog {
                                 width: double.infinity,
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.borderGray),
+                                  border: Border.all(color: borderColor),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
@@ -293,7 +284,7 @@ class BookAppointmentDialog {
 
                           // Step 3: Select Time
                           if (selectedDate != null) ...[
-                            _stepLabel('3', 'Select Time', isDark),
+                            _stepLabel('3', 'Select Time', textColor),
                             const SizedBox(height: 8),
                             if (availableTimes.isEmpty)
                               Container(
@@ -309,7 +300,7 @@ class BookAppointmentDialog {
                                     Expanded(
                                       child: Text(
                                         'No available time slots for this day. Try a different date.',
-                                        style: GoogleFonts.inter(fontSize: 13, color: AppColors.textDark),
+                                        style: GoogleFonts.inter(fontSize: 13, color: textColor),
                                       ),
                                     ),
                                   ],
@@ -327,10 +318,10 @@ class BookAppointmentDialog {
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                       decoration: BoxDecoration(
-                                        color: isSelected ? AppColors.primary : (isDark ? AppColors.darkBg : AppColors.fieldFill),
+                                        color: isSelected ? AppColors.primary : fillColor,
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                          color: isSelected ? AppColors.primary : (isDark ? AppColors.darkBorder : AppColors.borderGray),
+                                          color: isSelected ? AppColors.primary : borderColor,
                                         ),
                                       ),
                                       child: Text(
@@ -350,7 +341,7 @@ class BookAppointmentDialog {
 
                           // Step 4: Purpose
                           if (selectedTime != null) ...[
-                            _stepLabel('4', 'Purpose', isDark),
+                            _stepLabel('4', 'Purpose', textColor),
                             const SizedBox(height: 8),
                             TextFormField(
                               controller: purposeCtrl,
@@ -360,14 +351,14 @@ class BookAppointmentDialog {
                                 hintText: 'Describe the purpose of your appointment...',
                                 hintStyle: GoogleFonts.inter(fontSize: 14, color: mutedColor),
                                 filled: true,
-                                fillColor: isDark ? AppColors.darkBg : AppColors.fieldFill,
+                                fillColor: fillColor,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.borderGray),
+                                  borderSide: BorderSide(color: borderColor),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: isDark ? AppColors.darkBorder : AppColors.borderGray),
+                                  borderSide: BorderSide(color: borderColor),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -402,8 +393,7 @@ class BookAppointmentDialog {
                                               .doc(uid)
                                               .get();
                                           final studentName = studentSnap.get('full_name') as String? ?? 'Student';
-                                          final dateStr =
-                                              '${selectedDate!.month}/${selectedDate!.day}/${selectedDate!.year}';
+                                          final dateStr = '${selectedDate!.month}/${selectedDate!.day}/${selectedDate!.year}';
 
                                           await bookUseCase.call(
                                             studentId: uid,
@@ -470,7 +460,7 @@ class BookAppointmentDialog {
     );
   }
 
-  static Widget _stepLabel(String number, String title, bool isDark) {
+  static Widget _stepLabel(String number, String title, Color textColor) {
     return Row(
       children: [
         Container(
@@ -480,21 +470,13 @@ class BookAppointmentDialog {
             borderRadius: BorderRadius.circular(8),
           ),
           child: Center(
-            child: Text(
-              number,
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
+            child: Text(number,
+              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
           ),
         ),
         const SizedBox(width: 10),
-        Text(
-          title,
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: isDark ? AppColors.darkText : AppColors.textDark,
-          ),
-        ),
+        Text(title,
+          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: textColor)),
       ],
     );
   }

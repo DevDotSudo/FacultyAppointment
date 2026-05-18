@@ -19,10 +19,11 @@ class CustomDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      backgroundColor: isDark ? AppColors.darkCard : AppColors.cardLight,
+      backgroundColor: isDark ? AppColors.darkCardBg : AppColors.lightCardBg,
       child: Container(
         width: 400,
         padding: const EdgeInsets.all(24),
@@ -32,7 +33,7 @@ class CustomDialog extends StatelessWidget {
           children: [
             Text(title,
               style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold,
-                color: isDark ? AppColors.darkText : AppColors.textDark)),
+                color: textColor)),
             const SizedBox(height: 16),
             child,
             if (actions != null) ...[

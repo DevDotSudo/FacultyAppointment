@@ -5,6 +5,30 @@ import '../../../core/theme/app_colors.dart';
 import 'custom_dialog.dart';
 
 class DialogHelper {
+  /// Get theme-aware text color
+  static Color _textColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+  }
+
+  /// Get theme-aware muted color
+  static Color _mutedColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+  }
+
+  /// Get theme-aware border color
+  static Color _borderColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? AppColors.darkBorder : AppColors.lightBorder;
+  }
+
+  /// Get theme-aware fill color
+  static Color _fillColor(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark ? AppColors.darkInputBg : AppColors.lightInputBg;
+  }
+
   // ── Change Password Modal ──
   static Future<void> showChangePasswordModal(BuildContext context) {
     final currentCtrl = TextEditingController();
@@ -20,122 +44,140 @@ class DialogHelper {
       barrierDismissible: !isLoading,
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (context, setState) => CustomDialog(
-            title: 'Change Password',
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Current Password',
-                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                const SizedBox(height: 4),
-                TextField(
-                  controller: currentCtrl,
-                  obscureText: obscureCurrent,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.borderGray)),
-                    suffixIcon: IconButton(
-                      icon: Icon(obscureCurrent ? Icons.visibility_off : Icons.visibility, size: 20),
-                      onPressed: () => setState(() => obscureCurrent = !obscureCurrent),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text('New Password',
-                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                const SizedBox(height: 4),
-                TextField(
-                  controller: newCtrl,
-                  obscureText: obscureNew,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.borderGray)),
-                    suffixIcon: IconButton(
-                      icon: Icon(obscureNew ? Icons.visibility_off : Icons.visibility, size: 20),
-                      onPressed: () => setState(() => obscureNew = !obscureNew),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text('Confirm New Password',
-                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                const SizedBox(height: 4),
-                TextField(
-                  controller: confirmCtrl,
-                  obscureText: obscureConfirm,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.borderGray)),
-                    suffixIcon: IconButton(
-                      icon: Icon(obscureConfirm ? Icons.visibility_off : Icons.visibility, size: 20),
-                      onPressed: () => setState(() => obscureConfirm = !obscureConfirm),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : () async {
-                      if (newCtrl.text.length < 6) {
-                        showErrorDialog(context, title: 'Error', message: 'New password must be at least 6 characters');
-                        return;
-                      }
-                      if (newCtrl.text != confirmCtrl.text) {
-                        showErrorDialog(context, title: 'Error', message: 'Passwords do not match');
-                        return;
-                      }
-                      setState(() => isLoading = true);
-                      try {
-                        final user = FirebaseAuth.instance.currentUser;
-                        if (user == null) throw Exception('Not authenticated');
-                        final credential = EmailAuthProvider.credential(
-                          email: user.email!,
-                          password: currentCtrl.text,
-                        );
-                        await user.reauthenticateWithCredential(credential);
-                        await user.updatePassword(newCtrl.text);
+          builder: (context, setState) {
+            final textColor = _textColor(context);
+            final mutedColor = _mutedColor(context);
+            final borderColor = _borderColor(context);
+            final fillColor = _fillColor(context);
+            final inputBorder = OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: borderColor),
+            );
 
-                        currentCtrl.dispose();
-                        newCtrl.dispose();
-                        confirmCtrl.dispose();
-
-                        if (ctx.mounted) {
-                          Navigator.of(ctx).pop();
+            return CustomDialog(
+              title: 'Change Password',
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Current Password',
+                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textColor)),
+                  const SizedBox(height: 4),
+                  TextField(
+                    controller: currentCtrl,
+                    obscureText: obscureCurrent,
+                    decoration: InputDecoration(
+                      border: inputBorder,
+                      enabledBorder: inputBorder,
+                      fillColor: fillColor,
+                      filled: true,
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureCurrent ? Icons.visibility_off : Icons.visibility, size: 20, color: mutedColor),
+                        onPressed: () => setState(() => obscureCurrent = !obscureCurrent),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text('New Password',
+                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textColor)),
+                  const SizedBox(height: 4),
+                  TextField(
+                    controller: newCtrl,
+                    obscureText: obscureNew,
+                    decoration: InputDecoration(
+                      border: inputBorder,
+                      enabledBorder: inputBorder,
+                      fillColor: fillColor,
+                      filled: true,
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureNew ? Icons.visibility_off : Icons.visibility, size: 20, color: mutedColor),
+                        onPressed: () => setState(() => obscureNew = !obscureNew),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text('Confirm New Password',
+                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textColor)),
+                  const SizedBox(height: 4),
+                  TextField(
+                    controller: confirmCtrl,
+                    obscureText: obscureConfirm,
+                    decoration: InputDecoration(
+                      border: inputBorder,
+                      enabledBorder: inputBorder,
+                      fillColor: fillColor,
+                      filled: true,
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureConfirm ? Icons.visibility_off : Icons.visibility, size: 20, color: mutedColor),
+                        onPressed: () => setState(() => obscureConfirm = !obscureConfirm),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : () async {
+                        if (newCtrl.text.length < 6) {
+                          showErrorDialog(context, title: 'Error', message: 'New password must be at least 6 characters');
+                          return;
                         }
-                        if (ctx.mounted) {
-                          showDialog(
-                            context: ctx,
-                            builder: (_) => CustomDialog(
-                              title: 'Success',
-                              actions: [
-                                SizedBox(width: double.infinity, child: ElevatedButton(
-                                  onPressed: () => Navigator.of(ctx).pop(),
-                                  child: const Text('Done'),
-                                )),
-                              ],
-                              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                                const Icon(Icons.check_circle, color: AppColors.success, size: 48),
-                                const SizedBox(height: 12),
-                                Text('Password changed successfully!',
-                                  style: GoogleFonts.inter(fontSize: 14, color: AppColors.textDark), textAlign: TextAlign.center),
-                              ]),
-                            ),
+                        if (newCtrl.text != confirmCtrl.text) {
+                          showErrorDialog(context, title: 'Error', message: 'Passwords do not match');
+                          return;
+                        }
+                        setState(() => isLoading = true);
+                        try {
+                          final user = FirebaseAuth.instance.currentUser;
+                          if (user == null) throw Exception('Not authenticated');
+                          final credential = EmailAuthProvider.credential(
+                            email: user.email!,
+                            password: currentCtrl.text,
                           );
+                          await user.reauthenticateWithCredential(credential);
+                          await user.updatePassword(newCtrl.text);
+
+                          currentCtrl.dispose();
+                          newCtrl.dispose();
+                          confirmCtrl.dispose();
+
+                          if (ctx.mounted) Navigator.of(ctx).pop();
+                          if (ctx.mounted) {
+                            showDialog(
+                              context: ctx,
+                              builder: (_) => CustomDialog(
+                                title: 'Success',
+                                actions: [
+                                  SizedBox(width: double.infinity, child: ElevatedButton(
+                                    onPressed: () => Navigator.of(ctx).pop(),
+                                    child: const Text('Done'),
+                                  )),
+                                ],
+                                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                                  const Icon(Icons.check_circle, color: AppColors.success, size: 48),
+                                  const SizedBox(height: 12),
+                                  Text('Password changed successfully!',
+                                    style: GoogleFonts.inter(fontSize: 14, color: textColor), textAlign: TextAlign.center),
+                                ]),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          setState(() => isLoading = false);
+                          if (ctx.mounted) {
+                            showErrorDialog(ctx, title: 'Error', message: e.toString().replaceAll('Exception: ', ''));
+                          }
                         }
-                      } catch (e) {
-                        setState(() => isLoading = false);
-                        if (ctx.mounted) {
-                          showErrorDialog(ctx, title: 'Error', message: e.toString().replaceAll('Exception: ', ''));
-                        }
-                      }
-                    },
-                    child: isLoading
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text('Change Password'),
+                      },
+                      child: isLoading
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text('Change Password'),
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
@@ -163,7 +205,7 @@ class DialogHelper {
           children: [
             const Icon(Icons.error_outline, color: AppColors.danger, size: 28),
             const SizedBox(width: 12),
-            Expanded(child: Text(message, style: GoogleFonts.inter(fontSize: 14, color: AppColors.textDark))),
+            Expanded(child: Text(message, style: GoogleFonts.inter(fontSize: 14, color: _textColor(ctx)))),
           ],
         ),
       ),
@@ -184,12 +226,13 @@ class DialogHelper {
       builder: (ctx) => CustomDialog(
         title: 'Confirm Appointment',
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textMuted))),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Cancel', style: GoogleFonts.inter(color: _mutedColor(ctx)))),
           const SizedBox(width: 8),
           ElevatedButton(onPressed: () { Navigator.of(ctx).pop(); onConfirm(); }, child: const Text('Confirm')),
         ],
         child: Text('Are you sure you want to book an appointment with $facultyName on $date at $time?',
-          style: GoogleFonts.inter(fontSize: 14, color: AppColors.textDark)),
+          style: GoogleFonts.inter(fontSize: 14, color: _textColor(ctx))),
       ),
     );
   }
@@ -206,13 +249,14 @@ class DialogHelper {
       builder: (ctx) => CustomDialog(
         title: 'Cancel Appointment',
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text('No, Keep It', style: GoogleFonts.inter(color: AppColors.textMuted))),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('No, Keep It', style: GoogleFonts.inter(color: _mutedColor(ctx)))),
           const SizedBox(width: 8),
           ElevatedButton(onPressed: () { Navigator.of(ctx).pop(); onConfirm(); },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger), child: const Text('Yes, Cancel')),
         ],
         child: Text('Are you sure you want to cancel your appointment with $facultyName? This action cannot be undone.',
-          style: GoogleFonts.inter(fontSize: 14, color: AppColors.textDark)),
+          style: GoogleFonts.inter(fontSize: 14, color: _textColor(ctx))),
       ),
     );
   }
@@ -231,13 +275,14 @@ class DialogHelper {
       builder: (ctx) => CustomDialog(
         title: 'Accept Request',
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textMuted))),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Cancel', style: GoogleFonts.inter(color: _mutedColor(ctx)))),
           const SizedBox(width: 8),
           ElevatedButton(onPressed: () { Navigator.of(ctx).pop(); onConfirm(); },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.success), child: const Text('Accept')),
         ],
         child: Text('Are you sure you want to accept the appointment request from $studentName on $date at $time?',
-          style: GoogleFonts.inter(fontSize: 14, color: AppColors.textDark)),
+          style: GoogleFonts.inter(fontSize: 14, color: _textColor(ctx))),
       ),
     );
   }
@@ -252,27 +297,44 @@ class DialogHelper {
     return showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (ctx) => CustomDialog(
-        title: 'Reject Request',
-        actions: [
-          TextButton(onPressed: () { reasonController.dispose(); Navigator.of(ctx).pop(); },
-            child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textMuted))),
-          const SizedBox(width: 8),
-          ElevatedButton(onPressed: () { reasonController.dispose(); Navigator.of(ctx).pop(); onConfirm(); },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger), child: const Text('Reject')),
-        ],
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Are you sure you want to reject this request from $studentName?',
-            style: GoogleFonts.inter(fontSize: 14, color: AppColors.textDark)),
-          const SizedBox(height: 12),
-          Text('Reason (optional)', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-          const SizedBox(height: 4),
-          TextField(controller: reasonController, maxLines: 3,
-            decoration: InputDecoration(hintText: 'Enter reason...',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.borderGray)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.borderGray)))),
-        ]),
-      ),
+      builder: (ctx) {
+        final textColor = _textColor(ctx);
+        final mutedColor = _mutedColor(ctx);
+        final borderColor = _borderColor(ctx);
+        final fillColor = _fillColor(ctx);
+        final inputBorder = OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: borderColor),
+        );
+
+        return CustomDialog(
+          title: 'Reject Request',
+          actions: [
+            TextButton(onPressed: () { reasonController.dispose(); Navigator.of(ctx).pop(); },
+              child: Text('Cancel', style: GoogleFonts.inter(color: mutedColor))),
+            const SizedBox(width: 8),
+            ElevatedButton(onPressed: () { reasonController.dispose(); Navigator.of(ctx).pop(); onConfirm(); },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger), child: const Text('Reject')),
+          ],
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Are you sure you want to reject this request from $studentName?',
+              style: GoogleFonts.inter(fontSize: 14, color: textColor)),
+            const SizedBox(height: 12),
+            Text('Reason (optional)', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textColor)),
+            const SizedBox(height: 4),
+            TextField(controller: reasonController, maxLines: 3,
+              style: GoogleFonts.inter(color: textColor),
+              decoration: InputDecoration(
+                hintText: 'Enter reason...',
+                hintStyle: GoogleFonts.inter(color: mutedColor),
+                border: inputBorder,
+                enabledBorder: inputBorder,
+                fillColor: fillColor,
+                filled: true,
+              )),
+          ]),
+        );
+      },
     );
   }
 
@@ -320,144 +382,153 @@ class DialogHelper {
       context: context,
       barrierDismissible: true,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => CustomDialog(
-          title: isEdit ? 'Edit Schedule' : 'Add Schedule',
-          actions: [
-            TextButton(onPressed: () { Navigator.of(ctx).pop(); },
-              child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textMuted))),
-            const SizedBox(width: 8),
-            ElevatedButton(onPressed: () {
-              Navigator.of(ctx).pop();
-              onSave(selectedDay, _formatTime(selectedStart), _formatTime(selectedEnd));
-            },
-              child: Text(isEdit ? 'Save Changes' : 'Add')),
-          ],
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Align(alignment: Alignment.centerLeft,
-              child: Text('Day', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark))),
-            const SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              initialValue: selectedDay,
-              items: days.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
-              onChanged: (v) => setDialogState(() => selectedDay = v ?? selectedDay),
-              decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.borderGray)),
-                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12)),
-            ),
-            const SizedBox(height: 12),
-            // Day selector - date picker style grid
-            Text('Day of the Week', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: AppColors.fieldFill,
-                borderRadius: BorderRadius.circular(12),
+        builder: (context, setDialogState) {
+          final textColor = _textColor(context);
+          final mutedColor = _mutedColor(context);
+          final borderColor = _borderColor(context);
+          final fillColor = _fillColor(context);
+          final inputBorder = OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: borderColor),
+          );
+
+          return CustomDialog(
+            title: isEdit ? 'Edit Schedule' : 'Add Schedule',
+            actions: [
+              TextButton(onPressed: () { Navigator.of(ctx).pop(); },
+                child: Text('Cancel', style: GoogleFonts.inter(color: mutedColor))),
+              const SizedBox(width: 8),
+              ElevatedButton(onPressed: () {
+                Navigator.of(ctx).pop();
+                onSave(selectedDay, _formatTime(selectedStart), _formatTime(selectedEnd));
+              },
+                child: Text(isEdit ? 'Save Changes' : 'Add')),
+            ],
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Align(alignment: Alignment.centerLeft,
+                child: Text('Day', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textColor))),
+              const SizedBox(height: 4),
+              DropdownButtonFormField<String>(
+                initialValue: selectedDay,
+                items: days.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                onChanged: (v) => setDialogState(() => selectedDay = v ?? selectedDay),
+                decoration: InputDecoration(
+                  border: inputBorder,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                ),
               ),
-              child: Row(
-                children: days.map((day) {
-                  final isSelected = selectedDay == day;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => setDialogState(() => selectedDay = day),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          day.substring(0, 3), // Mon, Tue, Wed...
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                            color: isSelected ? Colors.white : AppColors.textDark,
+              const SizedBox(height: 12),
+              // Day selector
+              Text('Day of the Week', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textColor)),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: fillColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: days.map((day) {
+                    final isSelected = selectedDay == day;
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () => setDialogState(() => selectedDay = day),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.primary : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            day.substring(0, 3),
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                              color: isSelected ? Colors.white : textColor,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }).toList(),
+                ),
               ),
-            ),
-            const SizedBox(height: 14),
-            Row(children: [
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Start Time', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                const SizedBox(height: 4),
-                InkWell(
-                  onTap: () async {
-                    final picked = await showTimePicker(
-                      context: context,
-                      initialTime: selectedStart,
-                      helpText: 'Select start time',
-                    );
-                    if (picked != null) {
-                      setDialogState(() => selectedStart = picked);
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.borderGray),
-                      borderRadius: BorderRadius.circular(12),
-                      color: AppColors.fieldFill,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.access_time_rounded, size: 20, color: AppColors.primary),
-                        const SizedBox(width: 10),
-                        Text(
-                          _formatTime(selectedStart),
-                          style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textDark),
-                        ),
-                        const Spacer(),
-                        Icon(Icons.edit_calendar_rounded, size: 20, color: AppColors.textHint),
-                      ],
+              const SizedBox(height: 14),
+              Row(children: [
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Start Time', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: textColor)),
+                  const SizedBox(height: 4),
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: selectedStart,
+                        helpText: 'Select start time',
+                      );
+                      if (picked != null) setDialogState(() => selectedStart = picked);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: borderColor),
+                        borderRadius: BorderRadius.circular(12),
+                        color: fillColor,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.access_time_rounded, size: 20, color: AppColors.primary),
+                          const SizedBox(width: 10),
+                          Text(
+                            _formatTime(selectedStart),
+                            style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: textColor),
+                          ),
+                          const Spacer(),
+                          Icon(Icons.edit_calendar_rounded, size: 20, color: mutedColor),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ])),
-              const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('End Time', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                const SizedBox(height: 4),
-                InkWell(
-                  onTap: () async {
-                    final picked = await showTimePicker(
-                      context: context,
-                      initialTime: selectedEnd,
-                      helpText: 'Select end time',
-                    );
-                    if (picked != null) {
-                      setDialogState(() => selectedEnd = picked);
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.borderGray),
-                      borderRadius: BorderRadius.circular(12),
-                      color: AppColors.fieldFill,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.access_time_rounded, size: 20, color: AppColors.primary),
-                        const SizedBox(width: 10),
-                        Text(
-                          _formatTime(selectedEnd),
-                          style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textDark),
-                        ),
-                        const Spacer(),
-                        Icon(Icons.edit_calendar_rounded, size: 20, color: AppColors.textHint),
-                      ],
+                ])),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('End Time', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: textColor)),
+                  const SizedBox(height: 4),
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: context,
+                        initialTime: selectedEnd,
+                        helpText: 'Select end time',
+                      );
+                      if (picked != null) setDialogState(() => selectedEnd = picked);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: borderColor),
+                        borderRadius: BorderRadius.circular(12),
+                        color: fillColor,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.access_time_rounded, size: 20, color: AppColors.primary),
+                          const SizedBox(width: 10),
+                          Text(
+                            _formatTime(selectedEnd),
+                            style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: textColor),
+                          ),
+                          const Spacer(),
+                          Icon(Icons.edit_calendar_rounded, size: 20, color: mutedColor),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ])),
+                ])),
+              ]),
             ]),
-          ]),
-        ),
+          );
+        },
       ),
     );
   }
@@ -476,13 +547,14 @@ class DialogHelper {
       builder: (ctx) => CustomDialog(
         title: 'Delete Schedule',
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textMuted))),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Cancel', style: GoogleFonts.inter(color: _mutedColor(ctx)))),
           const SizedBox(width: 8),
           ElevatedButton(onPressed: () { Navigator.of(ctx).pop(); onConfirm(); },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger), child: const Text('Delete')),
         ],
         child: Text('Are you sure you want to delete the $day schedule ($startTime – $endTime)?',
-          style: GoogleFonts.inter(fontSize: 14, color: AppColors.textDark)),
+          style: GoogleFonts.inter(fontSize: 14, color: _textColor(ctx))),
       ),
     );
   }
@@ -499,7 +571,7 @@ class DialogHelper {
           const Icon(Icons.check_circle, color: AppColors.success, size: 48),
           const SizedBox(height: 12),
           Text('Your profile has been updated successfully.',
-            style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted), textAlign: TextAlign.center),
+            style: GoogleFonts.inter(fontSize: 14, color: _mutedColor(ctx)), textAlign: TextAlign.center),
         ]),
       ),
     );
@@ -529,21 +601,23 @@ class DialogHelper {
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger), child: const Text('Reject')),
         ],
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _detailRow('Student', studentName),
+          _detailRow(ctx, 'Student', studentName),
           const SizedBox(height: 10),
-          _detailRow('Date & Time', '$date · $time'),
+          _detailRow(ctx, 'Date & Time', '$date · $time'),
           const SizedBox(height: 10),
-          _detailRow('Purpose', purpose),
+          _detailRow(ctx, 'Purpose', purpose),
         ]),
       ),
     );
   }
 
-  static Widget _detailRow(String label, String value) {
+  static Widget _detailRow(BuildContext context, String label, String value) {
+    final textColor = _textColor(context);
+    final mutedColor = _mutedColor(context);
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textMuted)),
+      Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: mutedColor)),
       const SizedBox(width: 16),
-      Expanded(child: Text(value, style: GoogleFonts.inter(fontSize: 14, color: AppColors.textDark), textAlign: TextAlign.right)),
+      Expanded(child: Text(value, style: GoogleFonts.inter(fontSize: 14, color: textColor), textAlign: TextAlign.right)),
     ]);
   }
 
@@ -561,12 +635,13 @@ class DialogHelper {
       builder: (ctx) => CustomDialog(
         title: title,
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.textMuted))),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('Cancel', style: GoogleFonts.inter(color: _mutedColor(ctx)))),
           const SizedBox(width: 8),
           ElevatedButton(onPressed: () => Navigator.of(ctx).pop(true),
             style: ElevatedButton.styleFrom(backgroundColor: confirmColor), child: Text(confirmLabel)),
         ],
-        child: Text(message, style: GoogleFonts.inter(fontSize: 14, color: AppColors.textDark)),
+        child: Text(message, style: GoogleFonts.inter(fontSize: 14, color: _textColor(ctx))),
       ),
     );
   }
