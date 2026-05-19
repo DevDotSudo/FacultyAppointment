@@ -19,16 +19,27 @@ class DashboardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final w = MediaQuery.of(context).size.width;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? AppColors.darkCardBg : Colors.white;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
     final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final mutedColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
     return Container(
-      padding: Responsive.cardPadding(screenWidth),
+      width: double.infinity,
+      padding: Responsive.cardPadding(w),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCardBg : Colors.white,
-        borderRadius: BorderRadius.circular(Responsive.cardRadius(screenWidth)),
-        border: Border.all(color: borderColor, width: 0.5),
+        color: cardColor,
+        borderRadius: BorderRadius.circular(Responsive.cardRadius(w)),
+        border: Border.all(color: borderColor.withValues(alpha: 0.8)),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,16 +47,17 @@ class DashboardCard extends StatelessWidget {
           Row(
             children: [
               if (titleIcon != null) ...[
-                Icon(titleIcon, size: 18, color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+                Icon(titleIcon, size: 16,
+                  color: mutedColor),
                 const SizedBox(width: 8),
               ],
               Text(title,
                 style: GoogleFonts.inter(
-                  fontSize: Responsive.h4(screenWidth).fontSize,
+                  fontSize: Responsive.h4(w).fontSize,
                   fontWeight: FontWeight.w600,
                   color: textColor)),
               const Spacer(),
-              if (trailing != null) trailing!,
+              ?trailing,
             ],
           ),
           SizedBox(height: Responsive.s16),

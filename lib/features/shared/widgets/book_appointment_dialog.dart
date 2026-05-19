@@ -1,511 +1,641 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../features/student/domain/usecases/book_appointment_usecase.dart';
+import '../../../core/utils/responsive.dart';
 
-/// Full dialog-based appointment booking system
+/// Responsive book appointment dialog
+/// Mobile: Full-screen page
+/// Desktop: Centered dialog
 class BookAppointmentDialog {
-  static Future<void> show(BuildContext context) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+  static Future<bool?> show(
+    BuildContext context, {
+    required String facultyId,
+    required String facultyName,
+  }) {
+    final width = MediaQuery.of(context).size.width;
+    
+    if (Responsive.isMobile(width)) {
+      // Mobile: Full-screen page
+      return Navigator.of(context, rootNavigator: true).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => _BookAppointmentPage(
+            facultyId: facultyId,
+            facultyName: facultyName,
+          ),
+          fullscreenDialog: true,
+        ),
+      );
+    }
+    
+    // Desktop: Dialog
+    return showDialog<bool>(
+      context: context,
+      builder: (_) => Dialog(
+        child: _BookAppointmentContent(
+          facultyId: facultyId,
+          facultyName: facultyName,
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-screen page for mobile
+class _BookAppointmentPage extends StatelessWidget {
+  final String facultyId;
+  final String facultyName;
+
+  const _BookAppointmentPage({
+    required this.facultyId,
+    required this.facultyName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? AppColors.darkCardBg : Colors.white;
+    final bgColor = isDark ? AppColors.darkCard : Colors.white;
+
+    return Scaffold(
+      backgroundColor: bgColor,
+      appBar: AppBar(
+        backgroundColor: bgColor,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.close_rounded),
+        ),
+        title: Text(
+          'Book Appointment',
+          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+      ),
+      body: _BookAppointmentContent(
+        facultyId: facultyId,
+        facultyName: facultyName,
+      ),
+    );
+  }
+}
+
+/// Shared content for both mobile and desktop
+class _BookAppointmentContent extends StatefulWidget {
+  final String facultyId;
+  final String facultyName;
+
+  const _BookAppointmentContent({
+    required this.facultyId,
+    required this.facultyName,
+  });
+
+  @override
+  State<_BookAppointmentContent> createState() => _BookAppointmentContentState();
+}
+
+class _BookAppointmentContentState extends State<_BookAppointmentContent> {
+  final _purposeCtrl = TextEditingController();
+  List<Map<String, dynamic>> _schedules = [];
+  String? _selectedScheduleId;
+  bool _loading = true;
+  bool _submitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSchedules();
+  }
+
+  @override
+  void dispose() {
+    _purposeCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSchedules() async {
+    try {
+      final now = DateTime.now();
+      final snap = await FirebaseFirestore.instance
+          .collection('faculty_availability')
+          .where('faculty_id', isEqualTo: widget.facultyId)
+          .where('is_active', isEqualTo: true)
+          .get();
+
+      final available = <Map<String, dynamic>>[];
+      for (final doc in snap.docs) {
+        final d = doc.data();
+        final max = (d['max_slots'] as num?)?.toInt() ?? 1;
+        final booked = (d['booked_slots'] as num?)?.toInt() ?? 0;
+        if (booked >= max) continue;
+        
+        final rawDate = d['date'];
+        if (rawDate is Timestamp) {
+          if (rawDate.toDate().isBefore(DateTime(now.year, now.month, now.day))) {
+            continue;
+          }
+        }
+        available.add({'id': doc.id, ...d});
+      }
+
+      if (mounted) {
+        setState(() {
+          _schedules = available;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _submit() async {
+    if (_selectedScheduleId == null) {
+      _showError('Please select a time slot');
+      return;
+    }
+    if (_purposeCtrl.text.trim().isEmpty) {
+      _showError('Please enter a purpose');
+      return;
+    }
+
+    setState(() => _submitting = true);
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final studentSnap = await FirebaseFirestore.instance
+          .collection('students')
+          .doc(uid)
+          .get();
+      final studentName = studentSnap.data()?['full_name'] as String? ?? 'Student';
+
+      final schedule = _schedules.firstWhere((s) => s['id'] == _selectedScheduleId);
+      final rawDate = schedule['date'];
+      final dateStr = rawDate is Timestamp
+          ? DateFormat('EEE, MMM d, yyyy').format(rawDate.toDate())
+          : (schedule['day'] as String? ?? '');
+      final timeStr = '${schedule['start_time']} – ${schedule['end_time']}';
+
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final slotRef = FirebaseFirestore.instance
+            .collection('faculty_availability')
+            .doc(_selectedScheduleId!);
+        final slotDoc = await transaction.get(slotRef);
+
+        if (!slotDoc.exists) {
+          throw Exception('Schedule slot no longer available');
+        }
+
+        final slotData = slotDoc.data()!;
+        final max = (slotData['max_slots'] as num?)?.toInt() ?? 1;
+        final booked = (slotData['booked_slots'] as num?)?.toInt() ?? 0;
+
+        if (booked >= max) {
+          throw Exception('This slot is now fully booked');
+        }
+
+        transaction.update(slotRef, {'booked_slots': FieldValue.increment(1)});
+
+        final requestRef = FirebaseFirestore.instance
+            .collection('appointment_requests')
+            .doc();
+        transaction.set(requestRef, {
+          'student_id': uid,
+          'student_name': studentName,
+          'faculty_id': widget.facultyId,
+          'faculty_name': widget.facultyName,
+          'faculty_initials': widget.facultyName
+              .split(' ')
+              .map((e) => e.isNotEmpty ? e[0] : '')
+              .take(2)
+              .join()
+              .toUpperCase(),
+          'date': dateStr,
+          'time': timeStr,
+          'purpose': _purposeCtrl.text.trim(),
+          'schedule_id': _selectedScheduleId,
+          'status': 'pending',
+          'created_at': FieldValue.serverTimestamp(),
+          'updated_at': FieldValue.serverTimestamp(),
+        });
+      });
+
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _submitting = false);
+        _showError(e.toString().replaceAll('Exception: ', ''));
+      }
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.danger,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final mutedColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
     final fillColor = isDark ? AppColors.darkInputBg : AppColors.lightInputBg;
 
-    String? selectedFacultyId;
-    String? selectedFacultyName;
-    DateTime? selectedDate;
-    String? selectedTime;
-    bool isSubmitting = false;
-    final purposeCtrl = TextEditingController();
-    final bookUseCase = BookAppointmentUseCase();
+    final isMobile = Responsive.isMobile(width);
+    final padding = Responsive.outerPadding(width);
 
-    // Available times from faculty schedule
-    final availableTimes = <String>[];
+    Widget content = ListView(
+      padding: padding,
+      children: [
+        // Available Slots Section
+        Text(
+          'Available Slots',
+          style: GoogleFonts.inter(
+            fontSize: Responsive.h4(width).fontSize,
+            fontWeight: FontWeight.w600,
+            color: textColor,
+          ),
+        ),
+        SizedBox(height: Responsive.s12),
 
-    Future<void> loadTimes(String facultyId, DateTime? date) async {
-      availableTimes.clear();
-      if (date == null) return;
-
-      final dayName = _dayIndexToName(date.weekday);
-      try {
-        final snap = await FirebaseFirestore.instance
-            .collection('faculty_availability')
-            .where('faculty_id', isEqualTo: facultyId)
-            .get();
-
-        if (snap.docs.isEmpty) {
-          return;
-        }
-
-        for (final doc in snap.docs) {
-          final d = doc.data();
-          final day = d['day'] as String? ?? '';
-          final start = d['start_time'] as String? ?? '';
-          final end = d['end_time'] as String? ?? '';
-
-          if (day.toLowerCase() == dayName.toLowerCase()) {
-            final parsed = _parseTimeRange(start, end);
-            if (parsed != null) {
-              availableTimes.addAll(parsed);
-            }
-          }
-        }
-      } catch (_) {}
-    }
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            Future<void> onFacultyChanged(String? id, String? name) async {
-              selectedFacultyId = id;
-              selectedFacultyName = name;
-              selectedDate = null;
-              selectedTime = null;
-              availableTimes.clear();
-              setDialogState(() {});
-            }
-
-            Future<void> onDateSelected(DateTime date) async {
-              selectedDate = date;
-              selectedTime = null;
-              await loadTimes(selectedFacultyId!, date);
-              setDialogState(() {});
-            }
-
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.85,
+        if (_loading)
+          ...List.generate(
+            3,
+            (_) => Container(
+              height: 80,
+              margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    blurRadius: 30,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
+                color: fillColor,
+                borderRadius: BorderRadius.circular(Responsive.cardRadius(width)),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Drag handle
-                  Container(
-                    margin: const EdgeInsets.only(top: 12),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: mutedColor,
-                      borderRadius: BorderRadius.circular(2),
+            ),
+          )
+        else if (_schedules.isEmpty)
+          Container(
+            padding: EdgeInsets.all(Responsive.s16),
+            decoration: BoxDecoration(
+              color: AppColors.statusPending.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(Responsive.cardRadius(width)),
+              border: Border.all(
+                color: AppColors.statusPending.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.info_outline_rounded,
+                  size: 20,
+                  color: AppColors.statusPending,
+                ),
+                SizedBox(width: Responsive.s12),
+                Expanded(
+                  child: Text(
+                    'No available slots for this faculty',
+                    style: GoogleFonts.inter(
+                      fontSize: Responsive.body(width).fontSize,
+                      color: AppColors.statusPending,
                     ),
                   ),
-                  // Header
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.calendar_month_rounded, color: AppColors.primary, size: 24),
+                ),
+              ],
+            ),
+          )
+        else
+          ..._schedules.map((schedule) => _buildScheduleCard(
+                schedule,
+                width,
+                isDark,
+                textColor,
+                mutedColor,
+                borderColor,
+                fillColor,
+              )),
+
+        SizedBox(height: Responsive.s24),
+
+        // Purpose Section
+        Text(
+          'Purpose',
+          style: GoogleFonts.inter(
+            fontSize: Responsive.h4(width).fontSize,
+            fontWeight: FontWeight.w600,
+            color: textColor,
+          ),
+        ),
+        SizedBox(height: Responsive.s8),
+        TextField(
+          controller: _purposeCtrl,
+          maxLines: 3,
+          style: GoogleFonts.inter(
+            fontSize: Responsive.body(width).fontSize,
+            color: textColor,
+          ),
+          decoration: InputDecoration(
+            hintText: 'Describe the purpose of your appointment...',
+            hintStyle: GoogleFonts.inter(
+              fontSize: Responsive.body(width).fontSize,
+              color: mutedColor,
+            ),
+            filled: true,
+            fillColor: fillColor,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(Responsive.inputRadius(width)),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(Responsive.inputRadius(width)),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(Responsive.inputRadius(width)),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            contentPadding: EdgeInsets.all(Responsive.s12),
+          ),
+        ),
+        SizedBox(height: Responsive.s24),
+
+        // Action Buttons
+        if (isMobile)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ElevatedButton(
+                onPressed: (_submitting || _schedules.isEmpty) ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, Responsive.buttonHeight(width)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(Responsive.inputRadius(width)),
+                  ),
+                  elevation: 0,
+                ),
+                child: _submitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
                         ),
-                        const SizedBox(width: 12),
+                      )
+                    : Text(
+                        'Confirm Booking',
+                        style: GoogleFonts.inter(
+                          fontSize: Responsive.button(width).fontSize,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            ],
+          )
+        else
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: GoogleFonts.inter(color: mutedColor),
+                ),
+              ),
+              SizedBox(width: Responsive.s12),
+              ElevatedButton(
+                onPressed: (_submitting || _schedules.isEmpty) ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: Responsive.s24,
+                    vertical: Responsive.s12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(Responsive.inputRadius(width)),
+                  ),
+                  elevation: 0,
+                ),
+                child: _submitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        'Confirm',
+                        style: GoogleFonts.inter(
+                          fontSize: Responsive.button(width).fontSize,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            ],
+          ),
+      ],
+    );
+
+    // For desktop, wrap in constrained container
+    if (!isMobile) {
+      content = Container(
+        width: 500,
+        constraints: const BoxConstraints(maxHeight: 600),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Padding(
+              padding: EdgeInsets.all(Responsive.s20),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(Responsive.s8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.calendar_month_rounded,
+                      size: 20,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  SizedBox(width: Responsive.s12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
                           'Book Appointment',
-                          style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: textColor,
+                          ),
                         ),
-                        const Spacer(),
-                        InkWell(
-                          onTap: () => Navigator.of(ctx).pop(),
-                          borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: fillColor,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(Icons.close_rounded, size: 22, color: mutedColor),
+                        Text(
+                          widget.facultyName,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: mutedColor,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const Divider(height: 1),
-                  // Content
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Step 1: Select Faculty
-                          _stepLabel('1', 'Select Faculty', textColor),
-                          const SizedBox(height: 8),
-                          StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance.collection('faculty').snapshots(),
-                            builder: (context, snap) {
-                              final list = snap.hasData
-                                  ? snap.data!.docs.map((d) => {
-                                        'id': d.id,
-                                        'name': (d.data() as Map)['full_name'] as String? ?? 'Unknown',
-                                        'dept': (d.data() as Map)['department'] as String? ?? '',
-                                      }).toList()
-                                  : <Map<String, String>>[];
-                              return Container(
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: borderColor),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Column(
-                                  children: list.map((f) {
-                                    final isSelected = selectedFacultyId == f['id'];
-                                    return InkWell(
-                                      onTap: () => onFacultyChanged(f['id'], f['name']),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                        decoration: BoxDecoration(
-                                          color: isSelected ? AppColors.primary.withValues(alpha: 0.08) : null,
-                                          border: Border(
-                                            bottom: BorderSide(color: borderColor, width: 0.5),
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Container(
-                                              width: 44, height: 44,
-                                              decoration: BoxDecoration(
-                                                gradient: const LinearGradient(colors: [AppColors.primary, Color(0xFF8B5CF6)]),
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              child: Center(
-                                                child: Text(
-                                                  (f['name'] ?? 'F').split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase(),
-                                                  style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 14),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(f['name'] ?? '',
-                                                    style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: textColor)),
-                                                  if ((f['dept'] ?? '').isNotEmpty)
-                                                    Text(f['dept'] ?? '',
-                                                      style: GoogleFonts.inter(fontSize: 12, color: mutedColor)),
-                                                ],
-                                              ),
-                                            ),
-                                            if (isSelected)
-                                              Container(
-                                                padding: const EdgeInsets.all(6),
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.primary,
-                                                  borderRadius: BorderRadius.circular(20),
-                                                ),
-                                                child: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Step 2: Select Date
-                          if (selectedFacultyId != null) ...[
-                            _stepLabel('2', 'Select Date', textColor),
-                            const SizedBox(height: 8),
-                            InkWell(
-                              onTap: () async {
-                                final picked = await showDatePicker(
-                                  context: context,
-                                  initialDate: DateTime.now().add(const Duration(days: 1)),
-                                  firstDate: DateTime.now(),
-                                  lastDate: DateTime.now().add(const Duration(days: 90)),
-                                  helpText: 'Select appointment date',
-                                  builder: (context, child) => Theme(
-                                    data: Theme.of(context).copyWith(
-                                      colorScheme: ColorScheme.light(
-                                        primary: AppColors.primary,
-                                        onPrimary: Colors.white,
-                                      ),
-                                    ),
-                                    child: child!,
-                                  ),
-                                );
-                                if (picked != null) {
-                                  await onDateSelected(picked);
-                                }
-                              },
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: borderColor),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.calendar_today_rounded, size: 22, color: AppColors.primary),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      selectedDate != null
-                                          ? '${selectedDate!.month}/${selectedDate!.day}/${selectedDate!.year}'
-                                          : 'Pick a date',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w500,
-                                        color: selectedDate != null ? textColor : mutedColor,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-
-                          // Step 3: Select Time
-                          if (selectedDate != null) ...[
-                            _stepLabel('3', 'Select Time', textColor),
-                            const SizedBox(height: 8),
-                            if (availableTimes.isEmpty)
-                              Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: AppColors.warning.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.info_outline_rounded, color: AppColors.warning, size: 20),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        'No available time slots for this day. Try a different date.',
-                                        style: GoogleFonts.inter(fontSize: 13, color: textColor),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            else
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: availableTimes.map((time) {
-                                  final isSelected = selectedTime == time;
-                                  return InkWell(
-                                    onTap: () => setDialogState(() => selectedTime = time),
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                      decoration: BoxDecoration(
-                                        color: isSelected ? AppColors.primary : fillColor,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: isSelected ? AppColors.primary : borderColor,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        time,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 14,
-                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                          color: isSelected ? Colors.white : textColor,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            const SizedBox(height: 24),
-                          ],
-
-                          // Step 4: Purpose
-                          if (selectedTime != null) ...[
-                            _stepLabel('4', 'Purpose', textColor),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: purposeCtrl,
-                              maxLines: 3,
-                              style: GoogleFonts.inter(fontSize: 14, color: textColor),
-                              decoration: InputDecoration(
-                                hintText: 'Describe the purpose of your appointment...',
-                                hintStyle: GoogleFonts.inter(fontSize: 14, color: mutedColor),
-                                filled: true,
-                                fillColor: fillColor,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: borderColor),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: borderColor),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-
-                          // Submit button
-                          if (selectedFacultyId != null && selectedDate != null && selectedTime != null) ...[
-                            SizedBox(
-                              width: double.infinity,
-                              height: 52,
-                              child: ElevatedButton.icon(
-                                onPressed: isSubmitting
-                                    ? null
-                                    : () async {
-                                        if (purposeCtrl.text.trim().isEmpty) {
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Please enter a purpose'), backgroundColor: AppColors.danger),
-                                            );
-                                          }
-                                          return;
-                                        }
-                                        setDialogState(() => isSubmitting = true);
-                                        try {
-                                          final studentSnap = await FirebaseFirestore.instance
-                                              .collection('students')
-                                              .doc(uid)
-                                              .get();
-                                          final studentName = studentSnap.get('full_name') as String? ?? 'Student';
-                                          final dateStr = '${selectedDate!.month}/${selectedDate!.day}/${selectedDate!.year}';
-
-                                          await bookUseCase.call(
-                                            studentId: uid,
-                                            studentName: studentName,
-                                            facultyId: selectedFacultyId!,
-                                            facultyName: selectedFacultyName ?? 'Faculty',
-                                            facultyInitials: (selectedFacultyName ?? 'F')
-                                                .split(' ')
-                                                .map((e) => e.isNotEmpty ? e[0] : '')
-                                                .take(2)
-                                                .join()
-                                                .toUpperCase(),
-                                            date: dateStr,
-                                            time: selectedTime!,
-                                            purpose: purposeCtrl.text.trim(),
-                                          );
-
-                                          purposeCtrl.dispose();
-                                          if (context.mounted) {
-                                            Navigator.of(ctx).pop();
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(
-                                                content: Text('Appointment submitted! ✓'),
-                                                backgroundColor: AppColors.success,
-                                              ),
-                                            );
-                                          }
-                                        } catch (e) {
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(content: Text('Error: ${e.toString().replaceAll("Exception: ", "")}'), backgroundColor: AppColors.danger),
-                                            );
-                                          }
-                                        } finally {
-                                          if (context.mounted) setDialogState(() => isSubmitting = false);
-                                        }
-                                      },
-                                icon: isSubmitting
-                                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-                                    : const Icon(Icons.send_rounded, size: 20),
-                                label: Text(
-                                  isSubmitting ? 'Submitting...' : 'Submit Appointment',
-                                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                  elevation: 0,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.close_rounded, color: mutedColor),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  static Widget _stepLabel(String number, String title, Color textColor) {
-    return Row(
-      children: [
-        Container(
-          width: 26, height: 26,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [AppColors.primary, Color(0xFF8B5CF6)]),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Center(
-            child: Text(number,
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
-          ),
+            ),
+            Divider(height: 1, color: borderColor),
+            Expanded(child: content),
+          ],
         ),
-        const SizedBox(width: 10),
-        Text(title,
-          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: textColor)),
-      ],
-    );
-  }
-
-  static String _dayIndexToName(int index) {
-    switch (index) {
-      case DateTime.monday: return 'Monday';
-      case DateTime.tuesday: return 'Tuesday';
-      case DateTime.wednesday: return 'Wednesday';
-      case DateTime.thursday: return 'Thursday';
-      case DateTime.friday: return 'Friday';
-      case DateTime.saturday: return 'Saturday';
-      case DateTime.sunday: return 'Sunday';
-      default: return '';
+      );
     }
+
+    return content;
   }
 
-  static List<String>? _parseTimeRange(String start, String end) {
-    const allTimes = [
-      '7:00 AM', '7:30 AM', '8:00 AM', '8:30 AM',
-      '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM',
-      '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM',
-      '1:00 PM', '1:30 PM', '2:00 PM', '2:30 PM',
-      '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM',
-      '5:00 PM', '5:30 PM', '6:00 PM',
-    ];
-    final startIdx = allTimes.indexOf(start);
-    final endIdx = allTimes.indexOf(end);
-    if (startIdx < 0 || endIdx < 0 || endIdx <= startIdx) return null;
-    return allTimes.sublist(startIdx, endIdx);
+  Widget _buildScheduleCard(
+    Map<String, dynamic> schedule,
+    double width,
+    bool isDark,
+    Color textColor,
+    Color mutedColor,
+    Color borderColor,
+    Color fillColor,
+  ) {
+    final id = schedule['id'] as String;
+    final isSelected = _selectedScheduleId == id;
+    final max = (schedule['max_slots'] as num?)?.toInt() ?? 1;
+    final booked = (schedule['booked_slots'] as num?)?.toInt() ?? 0;
+    final remaining = max - booked;
+    final rawDate = schedule['date'];
+    final dateStr = rawDate is Timestamp
+        ? DateFormat('EEE, MMM d, yyyy').format(rawDate.toDate())
+        : (schedule['day'] as String? ?? '');
+    final isOnline = (schedule['consultation_type'] as String? ?? '') == 'online';
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedScheduleId = id),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.all(Responsive.s12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.08)
+              : fillColor,
+          border: Border.all(
+            color: isSelected ? AppColors.primary : borderColor,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(Responsive.cardRadius(width)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : borderColor,
+                  width: 2,
+                ),
+                color: isSelected ? AppColors.primary : Colors.transparent,
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check, size: 12, color: Colors.white)
+                  : null,
+            ),
+            SizedBox(width: Responsive.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    dateStr,
+                    style: GoogleFonts.inter(
+                      fontSize: Responsive.body(width).fontSize,
+                      fontWeight: FontWeight.w600,
+                      color: textColor,
+                    ),
+                  ),
+                  SizedBox(height: Responsive.s4),
+                  Row(
+                    children: [
+                      Icon(Icons.access_time_rounded,
+                          size: 14, color: mutedColor),
+                      SizedBox(width: Responsive.s4),
+                      Text(
+                        '${schedule['start_time']} – ${schedule['end_time']}',
+                        style: GoogleFonts.inter(
+                          fontSize: Responsive.small(width).fontSize,
+                          color: mutedColor,
+                        ),
+                      ),
+                      SizedBox(width: Responsive.s8),
+                      Icon(
+                        isOnline
+                            ? Icons.videocam_rounded
+                            : Icons.location_on_rounded,
+                        size: 14,
+                        color: isOnline ? AppColors.primary : AppColors.success,
+                      ),
+                      SizedBox(width: Responsive.s4),
+                      Text(
+                        isOnline ? 'Online' : 'In-person',
+                        style: GoogleFonts.inter(
+                          fontSize: Responsive.small(width).fontSize,
+                          color:
+                              isOnline ? AppColors.primary : AppColors.success,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: Responsive.s8,
+                vertical: Responsive.s4,
+              ),
+              decoration: BoxDecoration(
+                color: (remaining <= 2
+                        ? AppColors.statusPending
+                        : AppColors.statusAccepted)
+                    .withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '$remaining left',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: remaining <= 2
+                      ? AppColors.statusPending
+                      : AppColors.statusAccepted,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

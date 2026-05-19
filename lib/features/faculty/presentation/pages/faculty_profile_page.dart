@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/dialog_helper.dart';
+import '../../../shared/widgets/skeleton_loader.dart';
 // Reuse helpers from student_profile_page via local definitions
 
 class FacultyProfilePage extends StatefulWidget {
@@ -20,6 +21,14 @@ class _FacultyProfilePageState extends State<FacultyProfilePage> {
   final _specCtrl = TextEditingController();
   final _officeCtrl = TextEditingController();
   bool _isSaving = false, _dataLoaded = false, _isEditing = false;
+  late final Future<DocumentSnapshot> _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    _profileFuture = FirebaseFirestore.instance.collection('faculty').doc(uid).get();
+  }
 
   @override
   void dispose() {
@@ -46,16 +55,36 @@ class _FacultyProfilePageState extends State<FacultyProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? AppColors.darkText : AppColors.textDark;
     final mutedColor = isDark ? AppColors.darkMuted : AppColors.textMuted;
     final border = isDark ? AppColors.darkBorder : const Color(0xFFEEEFF2);
 
     return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('faculty').doc(uid).get(),
+      future: _profileFuture,
       builder: (context, snapshot) {
-        if (!snapshot.hasData || !snapshot.data!.exists) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                const SkeletonProfileHeader(),
+                const SizedBox(height: 24),
+                ...List.generate(
+                  6,
+                  (index) => Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: SkeletonLoader.rectangle(
+                      width: double.infinity,
+                      height: 56,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
         final data = snapshot.data!.data() as Map<String, dynamic>;
         final fullName = data['full_name'] as String? ?? 'Faculty';
         final email = data['email'] as String? ?? '';
@@ -164,36 +193,6 @@ class _FacultyProfilePageState extends State<FacultyProfilePage> {
               ],
             ])),
           ),
-          const SizedBox(height: 20),
-
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('appointment_requests').where('faculty_id', isEqualTo: uid).snapshots(),
-            builder: (context, snap) {
-              int total = 0, pending = 0, accepted = 0, rejected = 0;
-              if (snap.hasData) {
-                for (final doc in snap.data!.docs) {
-                  final s = doc['status'] as String? ?? '';
-                  total++;
-                  if (s == 'pending') { pending++; }
-                  else if (s == 'accepted') { accepted++; }
-                  else if (s == 'rejected') { rejected++; }
-                }
-              }
-              return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Request Stats', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: textColor)),
-                const SizedBox(height: 12),
-                Row(children: [
-                  Expanded(child: _mini('Total', total, AppColors.info, isDark)),
-                  const SizedBox(width: 10),
-                  Expanded(child: _mini('Pending', pending, AppColors.warning, isDark)),
-                  const SizedBox(width: 10),
-                  Expanded(child: _mini('Accepted', accepted, AppColors.success, isDark)),
-                  const SizedBox(width: 10),
-                  Expanded(child: _mini('Rejected', rejected, AppColors.danger, isDark)),
-                ]),
-              ]);
-            },
-          ),
         ]));
       },
     );
@@ -207,16 +206,4 @@ class _FacultyProfilePageState extends State<FacultyProfilePage> {
     ]),
   );
 
-  Widget _mini(String label, int count, Color accent, bool isDark) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: isDark ? AppColors.darkCard : Colors.white,
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: isDark ? AppColors.darkBorder : const Color(0xFFEEEFF2)),
-    ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('$count', style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.bold, color: accent)),
-      Text(label, style: GoogleFonts.inter(fontSize: 11, color: isDark ? AppColors.darkMuted : AppColors.textMuted)),
-    ]),
-  );
 }

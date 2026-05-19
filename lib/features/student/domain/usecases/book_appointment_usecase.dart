@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../shared/widgets/notification_service.dart';
 
 class BookAppointmentUseCase {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final NotificationService _notificationService = NotificationService();
+  final _firestore = FirebaseFirestore.instance;
+  final _notif = NotificationService();
 
   Future<void> call({
     required String studentId,
@@ -14,6 +14,7 @@ class BookAppointmentUseCase {
     required String date,
     required String time,
     required String purpose,
+    String? scheduleId,
   }) async {
     await _firestore.collection('appointment_requests').add({
       'student_id': studentId,
@@ -25,12 +26,12 @@ class BookAppointmentUseCase {
       'time': time,
       'purpose': purpose,
       'status': 'pending',
+      'schedule_id': ?scheduleId,
       'created_at': FieldValue.serverTimestamp(),
       'updated_at': FieldValue.serverTimestamp(),
     });
 
-    // Notify faculty about the new request
-    await _notificationService.createNotification(
+    await _notif.createNotification(
       userId: facultyId,
       title: 'New Appointment Request',
       message: '$studentName has requested an appointment on $date at $time.',

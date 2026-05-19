@@ -24,11 +24,16 @@ class FacultyRemoteDatasource {
       final snapshot = await _firestore
           .collection('appointment_requests')
           .where('faculty_id', isEqualTo: facultyId)
-          .orderBy('created_at', descending: true)
           .limit(20)
           .get();
 
-      return snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
+      final docs = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
+      docs.sort((a, b) {
+        final at = (a['created_at'] as dynamic)?.seconds ?? 0;
+        final bt = (b['created_at'] as dynamic)?.seconds ?? 0;
+        return (bt as int).compareTo(at as int);
+      });
+      return docs;
     } catch (e) {
       debugPrint('❌ FIRESTORE: getAppointmentRequests failed for facultyId=$facultyId — $e');
       rethrow;
@@ -41,11 +46,16 @@ class FacultyRemoteDatasource {
           .collection('appointment_requests')
           .where('faculty_id', isEqualTo: facultyId)
           .where('status', isEqualTo: 'pending')
-          .orderBy('created_at')
           .limit(10)
           .get();
 
-      return snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
+      final docs = snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList();
+      docs.sort((a, b) {
+        final at = (a['created_at'] as dynamic)?.seconds ?? 0;
+        final bt = (b['created_at'] as dynamic)?.seconds ?? 0;
+        return (at as int).compareTo(bt as int);
+      });
+      return docs;
     } catch (e) {
       debugPrint('❌ FIRESTORE: getPendingRequests failed for facultyId=$facultyId — $e');
       rethrow;

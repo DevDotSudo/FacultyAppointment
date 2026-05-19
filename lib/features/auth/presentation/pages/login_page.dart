@@ -33,16 +33,12 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _loadRememberedCredentials() async {
     final prefs = await SharedPreferences.getInstance();
-    final email = prefs.getString('remembered_email') ?? '';
-    final password = prefs.getString('remembered_password') ?? '';
     final remember = prefs.getBool('remember_me') ?? false;
+    final email = prefs.getString('remembered_email') ?? '';
     if (mounted) {
       setState(() {
         _rememberMe = remember;
-        if (remember) {
-          _emailCtrl.text = email;
-          _passwordCtrl.text = password;
-        }
+        if (remember && email.isNotEmpty) _emailCtrl.text = email;
       });
     }
   }
@@ -51,11 +47,9 @@ class _LoginPageState extends State<LoginPage> {
     final prefs = await SharedPreferences.getInstance();
     if (_rememberMe) {
       await prefs.setString('remembered_email', _emailCtrl.text.trim());
-      await prefs.setString('remembered_password', _passwordCtrl.text);
       await prefs.setBool('remember_me', true);
     } else {
       await prefs.remove('remembered_email');
-      await prefs.remove('remembered_password');
       await prefs.setBool('remember_me', false);
     }
   }
@@ -63,11 +57,13 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _onLogin() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
+    final cubit = context.read<AuthCubit>();
     await _saveRememberedCredentials();
-    await context.read<AuthCubit>().login(
-          email: _emailCtrl.text.trim(),
-          password: _passwordCtrl.text,
-        );
+    if (!mounted) return;
+    await cubit.login(
+      email: _emailCtrl.text.trim(),
+      password: _passwordCtrl.text,
+    );
     if (mounted) setState(() => _isLoading = false);
   }
 
@@ -80,171 +76,297 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? AppColors.darkBg : AppColors.lightBg;
-    final surfaceColor = isDark ? AppColors.darkSurface : Colors.white;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
-    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
-    final mutedColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          if (state.user.role == UserRole.student) {
-            context.goNamed('student-dashboard');
-          } else {
-            context.goNamed('faculty-dashboard');
-          }
+          final route = state.user.role == UserRole.student
+              ? 'student-dashboard'
+              : 'faculty-dashboard';
+          DialogHelper.showSuccessDialog(
+            context,
+            title: 'Welcome back!',
+            message: 'You have signed in successfully.',
+            onDismiss: () => context.goNamed(route),
+          );
         } else if (state is AuthFailure) {
           DialogHelper.showErrorDialog(context, title: 'Sign in failed', message: state.message);
         }
       },
       child: Scaffold(
-        backgroundColor: bgColor,
-        body: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Container(
-              width: 400,
-              decoration: BoxDecoration(
-                color: surfaceColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: borderColor),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Logo
-                    Container(
-                      width: 48, height: 48,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [AppColors.primary, Color(0xFF8B5CF6)]),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.calendar_month_rounded, color: Colors.white, size: 24),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Sign in to AppointEase',
-                      style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: textColor)),
-                    const SizedBox(height: 4),
-                    Text('Enter your credentials to continue',
-                      style: GoogleFonts.inter(fontSize: 14, color: mutedColor)),
-                    const SizedBox(height: 24),
-
-                    AuthTextField(
-                      label: 'Email',
-                      hintText: 'you@example.com',
-                      controller: _emailCtrl,
-                      keyboardType: TextInputType.emailAddress,
-                      prefixIcon: const Icon(Icons.mail_outline_rounded, size: 18, color: AppColors.textHint),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Email is required';
-                        if (!v.contains('@')) return 'Enter a valid email';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 14),
-
-                    AuthTextField(
-                      label: 'Password',
-                      hintText: 'Enter your password',
-                      controller: _passwordCtrl,
-                      obscureText: _obscurePass,
-                      prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, color: AppColors.textHint),
-                      suffixIcon: IconButton(
-                        onPressed: () => setState(() => _obscurePass = !_obscurePass),
-                        icon: Icon(
-                          _obscurePass ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-                          size: 18, color: AppColors.textHint,
-                        ),
-                      ),
-                      validator: (v) {
-                        if (v == null || v.isEmpty) return 'Password is required';
-                        if (v.length < 6) return 'Minimum 6 characters';
-                        return null;
-                      },
-                    ),
-
-                    // Remember Me + Forgot Password row
-                    Row(
-                      children: [
-                        SizedBox(
-                          height: 40,
-                          child: InkWell(
-                            onTap: () => setState(() => _rememberMe = !_rememberMe),
-                            borderRadius: BorderRadius.circular(4),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                SizedBox(
-                                  width: 20, height: 20,
-                                  child: Checkbox(
-                                    value: _rememberMe,
-                                    onChanged: (v) => setState(() => _rememberMe = v ?? false),
-                                    activeColor: AppColors.primary,
-                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text('Remember me',
-                                  style: GoogleFonts.inter(fontSize: 13, color: mutedColor)),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: () {},
-                          style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                          child: Text('Forgot password?',
-                            style: GoogleFonts.inter(fontSize: 13, color: AppColors.primary)),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 44,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _onLogin,
-                        child: _isLoading
-                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : Text('Sign in', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    Row(
-                      children: [
-                        Expanded(child: Divider(color: borderColor)),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text("Don't have an account?",
-                            style: GoogleFonts.inter(fontSize: 13, color: mutedColor)),
-                        ),
-                        Expanded(child: Divider(color: borderColor)),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 44,
-                      child: OutlinedButton(
-                        onPressed: () => context.goNamed('register'),
-                        child: Text('Create an account',
-                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500)),
-                      ),
-                    ),
-                  ],
-                ),
+        body: Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkBg : AppColors.primary, // Blue background!
+          ),
+          child: Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(w < 360 ? 16 : 24), // Reduce padding on very small screens
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 440),
+                child: _buildLoginCard(w, isDark),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoginCard(double w, bool isDark) {
+    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final mutedColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final cardBg = isDark ? AppColors.darkCardBg : Colors.white;
+    
+    // Responsive padding for very small screens
+    final cardPadding = w < 360 ? 20.0 : 32.0;
+    final logoSize = w < 360 ? 56.0 : 64.0;
+    final titleSize = w < 360 ? 20.0 : 24.0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: isDark ? Border.all(color: AppColors.darkBorder) : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.all(cardPadding),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Logo
+            Container(
+              width: logoSize,
+              height: logoSize,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.calendar_month_rounded, color: Colors.white, size: logoSize * 0.5),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Welcome Back',
+              style: GoogleFonts.poppins(
+                fontSize: titleSize,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Sign in to continue to AppointEase',
+              style: GoogleFonts.inter(
+                fontSize: w < 360 ? 13 : 14,
+                color: mutedColor,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: w < 360 ? 24 : 32),
+
+            // Email Field
+            AuthTextField(
+              label: 'Email Address',
+              hintText: 'Enter your email',
+              controller: _emailCtrl,
+              keyboardType: TextInputType.emailAddress,
+              prefixIcon: Icon(Icons.email_outlined, size: 20, color: AppColors.primary),
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Email is required';
+                if (!v.contains('@')) return 'Enter a valid email';
+                return null;
+              },
+            ),
+            SizedBox(height: w < 360 ? 16 : 20),
+
+            // Password Field
+            AuthTextField(
+              label: 'Password',
+              hintText: 'Enter your password',
+              controller: _passwordCtrl,
+              obscureText: _obscurePass,
+              prefixIcon: Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
+              suffixIcon: IconButton(
+                onPressed: () => setState(() => _obscurePass = !_obscurePass),
+                icon: Icon(
+                  _obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  size: 20,
+                  color: mutedColor,
+                ),
+              ),
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Password is required';
+                if (v.length < 6) return 'Minimum 6 characters';
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // Remember Me & Forgot Password
+            Row(
+              children: [
+                Flexible(
+                  child: InkWell(
+                    onTap: () => setState(() => _rememberMe = !_rememberMe),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: _rememberMe ? AppColors.primary : Colors.transparent,
+                            border: Border.all(
+                              color: _rememberMe ? AppColors.primary : mutedColor,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: _rememberMe
+                              ? const Icon(Icons.check, size: 14, color: Colors.white)
+                              : null,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'Remember me',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: mutedColor,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: TextButton(
+                    onPressed: () {},
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      'Forgot Password?',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: w < 360 ? 24 : 32),
+
+            // Sign In Button (Flat)
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _onLogin,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0, // Flat!
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        'Sign In',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+              ),
+            ),
+            SizedBox(height: w < 360 ? 24 : 32),
+
+            // Divider
+            Row(
+              children: [
+                Expanded(
+                  child: Divider(
+                    color: isDark ? Colors.white24 : Colors.black12,
+                    thickness: 1,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    'OR',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: mutedColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Divider(
+                    color: isDark ? Colors.white24 : Colors.black12,
+                    thickness: 1,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: w < 360 ? 24 : 32),
+
+            // Sign Up Link
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  "Don't have an account? ",
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: mutedColor,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => context.goNamed('register'),
+                  child: Text(
+                    'Sign Up',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

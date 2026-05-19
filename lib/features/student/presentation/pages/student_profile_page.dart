@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../shared/widgets/dialog_helper.dart';
+import '../../../shared/widgets/skeleton_loader.dart';
 
 class StudentProfilePage extends StatefulWidget {
   const StudentProfilePage({super.key});
@@ -18,6 +19,14 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   final _phoneCtrl = TextEditingController();
   final _courseCtrl = TextEditingController();
   bool _isSaving = false, _dataLoaded = false, _isEditing = false;
+  late final Future<DocumentSnapshot> _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    _profileFuture = FirebaseFirestore.instance.collection('students').doc(uid).get();
+  }
 
   @override
   void dispose() { _nameCtrl.dispose(); _phoneCtrl.dispose(); _courseCtrl.dispose(); super.dispose(); }
@@ -41,7 +50,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final mutedColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
@@ -49,9 +57,51 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
 
     return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('students').doc(uid).get(),
+      future: _profileFuture,
       builder: (context, snapshot) {
-        if (!snapshot.hasData || !snapshot.data!.exists) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                const SkeletonProfileHeader(),
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: SkeletonLoader.rectangle(
+                    width: double.infinity,
+                    height: 56,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: SkeletonLoader.rectangle(
+                    width: double.infinity,
+                    height: 56,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: SkeletonLoader.rectangle(
+                    width: double.infinity,
+                    height: 56,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: SkeletonLoader.rectangle(
+                    width: double.infinity,
+                    height: 56,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
         final data = snapshot.data!.data() as Map<String, dynamic>;
         final fullName = data['full_name'] as String? ?? 'Student';
         final email = data['email'] as String? ?? '';
@@ -138,50 +188,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
               ],
             ])),
           ),
-          SizedBox(height: Responsive.s20),
-
-          // Appointment Stats
-          StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('appointment_requests').where('student_id', isEqualTo: uid).snapshots(),
-            builder: (context, snap) {
-              int total = 0, pending = 0, accepted = 0, rejected = 0;
-              if (snap.hasData) for (final doc in snap.data!.docs) {
-                final s = doc['status'] as String? ?? ''; total++;
-                if (s == 'pending') pending++; else if (s == 'accepted') accepted++; else if (s == 'rejected') rejected++;
-              }
-              final twoCol = Responsive.statCardsTwoCol(screenWidth);
-              return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Appointment Stats', style: GoogleFonts.inter(
-                  fontSize: Responsive.h4(screenWidth).fontSize,
-                  fontWeight: FontWeight.w600,
-                  color: textColor)),
-                SizedBox(height: Responsive.s12),
-                if (twoCol) ...[
-                  Row(children: [
-                    Expanded(child: _statMini('Total', total, AppColors.lightInfo, isDark, borderColor, screenWidth)),
-                    SizedBox(width: Responsive.gutter(screenWidth)),
-                    Expanded(child: _statMini('Pending', pending, AppColors.statusPending, isDark, borderColor, screenWidth)),
-                  ]),
-                  SizedBox(height: Responsive.gutter(screenWidth)),
-                  Row(children: [
-                    Expanded(child: _statMini('Accepted', accepted, AppColors.statusAccepted, isDark, borderColor, screenWidth)),
-                    SizedBox(width: Responsive.gutter(screenWidth)),
-                    Expanded(child: _statMini('Rejected', rejected, AppColors.statusRejected, isDark, borderColor, screenWidth)),
-                  ]),
-                ] else ...[
-                  Row(children: [
-                    Expanded(child: _statMini('Total', total, AppColors.lightInfo, isDark, borderColor, screenWidth)),
-                    SizedBox(width: Responsive.gutter(screenWidth)),
-                    Expanded(child: _statMini('Pending', pending, AppColors.statusPending, isDark, borderColor, screenWidth)),
-                    SizedBox(width: Responsive.gutter(screenWidth)),
-                    Expanded(child: _statMini('Accepted', accepted, AppColors.statusAccepted, isDark, borderColor, screenWidth)),
-                    SizedBox(width: Responsive.gutter(screenWidth)),
-                    Expanded(child: _statMini('Rejected', rejected, AppColors.statusRejected, isDark, borderColor, screenWidth)),
-                  ]),
-                ],
-              ]);
-            },
-          ),
         ]);
       },
     );
@@ -254,24 +260,4 @@ Widget _infoRow(String label, String value, Color textColor, Color mutedColor, d
         fontSize: Responsive.body(screenWidth).fontSize,
         color: textColor))),
     ]));
-}
-
-Widget _statMini(String label, int count, Color accent, bool isDark, Color borderColor, double screenWidth) {
-  return Container(
-    padding: Responsive.cardPadding(screenWidth),
-    decoration: BoxDecoration(
-      color: isDark ? AppColors.darkCardBg : Colors.white,
-      borderRadius: BorderRadius.circular(Responsive.cardRadius(screenWidth)),
-      border: Border.all(color: borderColor, width: 0.5),
-    ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('$count', style: GoogleFonts.inter(
-        fontSize: Responsive.display1(screenWidth).fontSize! - 4,
-        fontWeight: FontWeight.bold,
-        color: accent)),
-      Text(label, style: GoogleFonts.inter(
-        fontSize: Responsive.label(screenWidth).fontSize,
-        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary)),
-    ]),
-  );
 }

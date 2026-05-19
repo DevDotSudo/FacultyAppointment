@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/responsive.dart';
 
 class AuthTextField extends StatelessWidget {
   final String label;
@@ -28,6 +29,7 @@ class AuthTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
     final hintColor = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
@@ -40,46 +42,55 @@ class AuthTextField extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.inter(
-            fontSize: 12,
+            fontSize: Responsive.small(w).fontSize,
             fontWeight: FontWeight.w600,
             color: textColor,
             letterSpacing: 0.3,
           ),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: Responsive.s8),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           obscureText: obscureText,
           maxLines: maxLines,
           validator: validator,
-          style: GoogleFonts.inter(fontSize: 14, color: textColor),
+          style: GoogleFonts.inter(
+            fontSize: Responsive.body(w).fontSize,
+            color: textColor,
+          ),
           decoration: InputDecoration(
             hintText: hintText,
-            hintStyle: GoogleFonts.inter(fontSize: 13, color: hintColor),
+            hintStyle: GoogleFonts.inter(
+              fontSize: Responsive.small(w).fontSize,
+              color: hintColor,
+            ),
             suffixIcon: suffixIcon,
             prefixIcon: prefixIcon,
             filled: true,
             fillColor: fillColor,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(Responsive.inputRadius(w)),
               borderSide: BorderSide(color: borderColor),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(Responsive.inputRadius(w)),
               borderSide: BorderSide(color: borderColor),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(Responsive.inputRadius(w)),
               borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(Responsive.inputRadius(w)),
               borderSide: const BorderSide(color: AppColors.danger),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(Responsive.inputRadius(w)),
               borderSide: const BorderSide(color: AppColors.danger, width: 1.5),
             ),
           ),

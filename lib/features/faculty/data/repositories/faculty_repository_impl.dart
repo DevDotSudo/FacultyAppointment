@@ -23,7 +23,7 @@ class FacultyRepositoryImpl implements FacultyRepository {
   @override
   Future<List<AvailabilityEntity>> getFacultySchedule(String facultyId) async {
     final data = await _remoteDatasource.getFacultySchedule(facultyId);
-    return data.map((d) => AvailabilityEntity.fromMap(d)).toList();
+    return data.map((d) => AvailabilityEntity.fromMap(d, d['id'] as String? ?? '')).toList();
   }
 
   @override

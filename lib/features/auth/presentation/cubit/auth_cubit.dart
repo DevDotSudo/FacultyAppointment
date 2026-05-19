@@ -41,7 +41,18 @@ class AuthCubit extends Cubit<AuthState> {
       final role = roleString == 'student' ? UserRole.student : UserRole.faculty;
       emit(AuthSuccess(UserEntity(id: user.uid, email: user.email ?? email, role: role)));
     } catch (e) {
-      emit(AuthFailure(AppConstants.parseError(e)));
+      final message = e.toString();
+      // Catch Firebase Auth-specific errors and show user-friendly message
+      if (message.contains('invalid-credential') ||
+          message.contains('INVALID_LOGIN_CREDENTIALS') ||
+          message.contains('user-not-found') ||
+          message.contains('wrong-password') ||
+          message.contains('INVALID_PASSWORD') ||
+          message.contains('invalid-email')) {
+        emit(AuthFailure('Invalid email or password'));
+      } else {
+        emit(AuthFailure(AppConstants.parseError(e)));
+      }
     }
   }
 

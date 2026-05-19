@@ -21,44 +21,63 @@ class StatCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final w = MediaQuery.of(context).size.width;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? AppColors.darkCardBg : Colors.white;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.lightBorder;
+    final textColor = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+    final mutedColor = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
     return Container(
-      padding: Responsive.cardPadding(screenWidth),
+      padding: Responsive.cardPadding(w),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkCardBg : Colors.white,
-        borderRadius: BorderRadius.circular(Responsive.cardRadius(screenWidth)),
-        border: Border.all(color: borderColor, width: 0.5),
+        color: cardColor,
+        borderRadius: BorderRadius.circular(Responsive.cardRadius(w)),
+        border: Border.all(color: borderColor.withValues(alpha: 0.8)),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.transparent : Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 22, color: accentColor),
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(Responsive.s8),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: isDark ? 0.15 : 0.1),
+                  borderRadius: BorderRadius.circular(Responsive.cardRadius(w) * 0.7),
+                ),
+                child: Icon(icon, size: 18, color: accentColor),
+              ),
+              const Spacer(),
+              if (onViewAll != null)
+                InkWell(
+                  onTap: onViewAll,
+                  borderRadius: BorderRadius.circular(6),
+                  child: Icon(Icons.arrow_forward_ios_rounded,
+                    size: 10, color: mutedColor),
+                ),
+            ],
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                  style: GoogleFonts.inter(
-                    fontSize: Responsive.label(screenWidth).fontSize,
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary)),
-                const SizedBox(height: 2),
-                Text(number,
-                  style: GoogleFonts.inter(
-                    fontSize: Responsive.display1(screenWidth).fontSize! - 4,
-                    fontWeight: FontWeight.w700,
-                    color: accentColor)),
-              ],
-            ),
-          ),
+          SizedBox(height: Responsive.s12),
+          Text(label,
+            style: GoogleFonts.inter(
+              fontSize: Responsive.small(w).fontSize,
+              color: mutedColor,
+              fontWeight: FontWeight.w500)),
+          const SizedBox(height: 2),
+          Text(number,
+            style: GoogleFonts.inter(
+              fontSize: Responsive.display1(w).fontSize,
+              fontWeight: FontWeight.w800,
+              color: textColor,
+              height: 1.1)),
         ],
       ),
     );

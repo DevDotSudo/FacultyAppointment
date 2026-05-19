@@ -82,10 +82,17 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: '/student/book-appointment',
           name: 'student-book-appointment',
-          builder: (context, state) => BlocProvider(
-            create: (_) => sl<StudentCubit>()..loadDashboard(),
-            child: const BookAppointmentPage(),
-          ),
+          builder: (context, state) {
+            final extra = state.extra as Map<String, String?>?;
+            return BlocProvider(
+              create: (_) => sl<StudentCubit>()..loadDashboard(),
+              child: BookAppointmentPage(
+                preselectedFacultyId: extra?['facultyId'],
+                preselectedFacultyName: extra?['facultyName'],
+                preselectedDept: extra?['dept'],
+              ),
+            );
+          },
         ),
         GoRoute(
           path: '/student/faculty',
@@ -98,10 +105,13 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: '/student/appointment-detail',
           name: 'student-appointment-detail',
-          builder: (context, state) => BlocProvider(
-            create: (_) => sl<StudentCubit>()..loadDashboard(),
-            child: const AppointmentDetailPage(),
-          ),
+          builder: (context, state) {
+            final appointmentId = state.extra as String? ?? '';
+            return BlocProvider(
+              create: (_) => sl<StudentCubit>()..loadDashboard(),
+              child: AppointmentDetailPage(appointmentId: appointmentId),
+            );
+          },
         ),
         GoRoute(
           path: '/student/profile',
@@ -148,10 +158,13 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: '/faculty/request-detail',
           name: 'faculty-request-detail',
-          builder: (context, state) => BlocProvider(
-            create: (_) => sl<FacultyCubit>()..loadDashboard(),
-            child: const RequestDetailPage(),
-          ),
+          builder: (context, state) {
+            final requestId = state.extra as String? ?? '';
+            return BlocProvider(
+              create: (_) => sl<FacultyCubit>()..loadDashboard(),
+              child: RequestDetailPage(requestId: requestId),
+            );
+          },
         ),
       ],
     ),

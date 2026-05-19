@@ -10,6 +10,7 @@ class RequestTile extends StatelessWidget {
   final VoidCallback? onAccept;
   final VoidCallback? onReject;
   final VoidCallback? onView;
+  final VoidCallback? onReschedule;
 
   const RequestTile({
     super.key,
@@ -19,6 +20,7 @@ class RequestTile extends StatelessWidget {
     this.onAccept,
     this.onReject,
     this.onView,
+    this.onReschedule,
   });
 
   @override
@@ -36,87 +38,109 @@ class RequestTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(Responsive.cardRadius(screenWidth)),
         border: Border.all(color: borderColor, width: 0.5),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Avatar
-          Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.statusPending.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Avatar
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.statusPending.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(child: Text(
+                studentName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase(),
+                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.statusPending))),
             ),
-            child: Center(child: Text(
-              studentName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase(),
-              style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.statusPending))),
-          ),
-          SizedBox(width: Responsive.s12),
-          // Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(studentName,
-                  style: GoogleFonts.inter(
-                    fontSize: Responsive.body(screenWidth).fontSize,
-                    fontWeight: FontWeight.w600,
-                    color: textColor)),
-                const SizedBox(height: 2),
-                Text(dateTime,
-                  style: GoogleFonts.inter(
-                    fontSize: Responsive.small(screenWidth).fontSize,
-                    color: mutedColor)),
-                const SizedBox(height: 4),
-                Text(purpose,
-                  maxLines: 1, overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: Responsive.small(screenWidth).fontSize! - 1,
-                    color: mutedColor)),
-              ],
+            SizedBox(width: Responsive.s12),
+            // Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(studentName,
+                    style: GoogleFonts.inter(
+                      fontSize: Responsive.body(screenWidth).fontSize,
+                      fontWeight: FontWeight.w600,
+                      color: textColor)),
+                  const SizedBox(height: 2),
+                  Text(dateTime,
+                    style: GoogleFonts.inter(
+                      fontSize: Responsive.small(screenWidth).fontSize,
+                      color: mutedColor)),
+                  const SizedBox(height: 4),
+                  Text(purpose,
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: Responsive.small(screenWidth).fontSize! - 1,
+                      color: mutedColor)),
+                ],
+              ),
             ),
-          ),
-          // Actions
-          if (onAccept != null && onReject != null)
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                InkWell(
-                  onTap: onAccept,
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.statusAccepted.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
+            // Actions
+            if (onAccept != null && onReject != null)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  InkWell(
+                    onTap: onAccept,
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.statusAccepted.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(Icons.check_rounded, size: 20, color: AppColors.statusAccepted),
                     ),
-                    child: const Icon(Icons.check_rounded, size: 18, color: AppColors.statusAccepted),
                   ),
-                ),
-                const SizedBox(width: 6),
-                InkWell(
-                  onTap: onReject,
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.statusRejected.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
+                  SizedBox(width: Responsive.isMobile(screenWidth) ? 12 : 8),
+                  InkWell(
+                    onTap: onReject,
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.statusRejected.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(Icons.close_rounded, size: 20, color: AppColors.statusRejected),
                     ),
-                    child: const Icon(Icons.close_rounded, size: 18, color: AppColors.statusRejected),
                   ),
-                ),
-              ],
+                ],
+              ),
+            if (onView != null)
+              IconButton(
+                icon: Icon(Icons.visibility_outlined, size: 18, color: mutedColor),
+                onPressed: onView,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                tooltip: 'View details',
+              ),
+          ],
+        ),
+        // Reschedule button
+        if (onReschedule != null) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: onReschedule,
+              icon: const Icon(Icons.schedule_send_rounded, size: 15),
+              label: Text('Reschedule', style: GoogleFonts.inter(
+                fontSize: Responsive.small(screenWidth).fontSize,
+                fontWeight: FontWeight.w600)),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
             ),
-          if (onView != null)
-            IconButton(
-              icon: Icon(Icons.visibility_outlined, size: 18, color: mutedColor),
-              onPressed: onView,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-              tooltip: 'View details',
-            ),
+          ),
         ],
-      ),
+      ]),
     );
   }
 }

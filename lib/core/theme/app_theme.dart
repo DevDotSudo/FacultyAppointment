@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTheme {
-  // ── Light Theme (GitHub-inspired) ──
+  // ── Light Theme ──
   static ThemeData light() {
     final base = GoogleFonts.interTextTheme();
     return ThemeData(
@@ -37,11 +37,11 @@ class AppTheme {
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.lightHeaderBg,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.lightTextPrimary,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
-        iconTheme: const IconThemeData(color: Colors.white, size: 20),
+        titleTextStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.lightTextPrimary),
+        iconTheme: const IconThemeData(color: AppColors.lightTextPrimary, size: 20),
       ),
       cardTheme: CardThemeData(
         color: AppColors.lightCardBg,
@@ -119,11 +119,11 @@ class AppTheme {
       ),
       popupMenuTheme: PopupMenuThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: AppColors.lightBorder)),
-        elevation: 4,
+        elevation: 2,  // Flat design - minimal shadow
       ),
       dialogTheme: DialogThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 8,
+        elevation: 4,  // Flat design - minimal shadow
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
@@ -133,7 +133,7 @@ class AppTheme {
     );
   }
 
-  // ── Dark Theme (GitHub Dark-inspired) ──
+  // ── Dark Theme ──
   static ThemeData dark() {
     final base = GoogleFonts.interTextTheme(ThemeData.dark().textTheme);
     return ThemeData(
@@ -249,12 +249,12 @@ class AppTheme {
       ),
       popupMenuTheme: PopupMenuThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: AppColors.darkBorder)),
-        elevation: 4,
+        elevation: 2,  // Flat design - minimal shadow
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.darkSurface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 8,
+        elevation: 4,  // Flat design - minimal shadow
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
